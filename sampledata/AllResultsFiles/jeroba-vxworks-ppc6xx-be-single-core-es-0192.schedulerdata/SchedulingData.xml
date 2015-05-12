@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<SchedulingParameters>
+     <ClockRate Unit="MHz">33.336626892252895</ClockRate>
+     <Thread Name="AbstractAsyncEventHandlerThread[1,pri=20]">
+          <Threadname>AbstractAsyncEventHandlerThread[1,pri=20]</Threadname>
+          <AssociatedID>3</AssociatedID>
+          <ExecutionTime>
+               <WorstCase Unit="us">32103.547952198773</WorstCase>
+               <AverageCase Unit="us">28418.39971684281</AverageCase>
+               <BestCase Unit="us">16016.947417199099</BestCase>
+               <StdDeviation Unit="us">2420.151452841502</StdDeviation>
+          </ExecutionTime>
+          <InterArrivalTime>
+               <Minimum Unit="us">39983.40936856319</Minimum>
+               <Maximum Unit="us">40072.980518327415</Maximum>
+               <ReleaseJitter Unit="us">89.57114976422277</ReleaseJitter>
+               <StdDeviation Unit="us">12.75172598431922</StdDeviation>
+          </InterArrivalTime>
+          <BlockingTime>
+               <Maximum Unit="us">5331.223239064464</Maximum>
+               <Average Unit="us">4365.660996089773</Average>
+               <Minimum Unit="us">0.0</Minimum>
+               <StdDeviation Unit="us">755.3498976485417</StdDeviation>
+          </BlockingTime>
+          <ResponseTime>
+               <WorstCase Unit="us">36299.38337526329</WorstCase>
+               <AverageCase Unit="us">32800.89963736818</AverageCase>
+               <BestCase Unit="us">18249.02687264311</BestCase>
+               <StdDeviation Unit="us">2761.6807170269044</StdDeviation>
+          </ResponseTime>
+     </Thread>
+     <Thread Name="AbstractAsyncEventHandlerThread[0,pri=21]">
+          <Threadname>AbstractAsyncEventHandlerThread[0,pri=21]</Threadname>
+          <AssociatedID>4</AssociatedID>
+          <ExecutionTime>
+               <WorstCase Unit="us">143.56581472591097</WorstCase>
+               <AverageCase Unit="us">92.2112489045606</AverageCase>
+               <BestCase Unit="us">19.138109025309486</BestCase>
+               <StdDeviation Unit="us">29.47575713608623</StdDeviation>
+          </ExecutionTime>
+          <InterArrivalTime>
+               <Minimum Unit="us">1876.4645925991142</Minimum>
+               <Maximum Unit="us">2127.299808382246</Maximum>
+               <ReleaseJitter Unit="us">250.83521578313153</ReleaseJitter>
+               <StdDeviation Unit="us">33.46176158275904</StdDeviation>
+          </InterArrivalTime>
+          <BlockingTime>
+               <Maximum Unit="us">0.0</Maximum>
+               <Average Unit="us">0.0</Average>
+               <Minimum Unit="us">0.0</Minimum>
+               <StdDeviation Unit="us">0.0</StdDeviation>
+          </BlockingTime>
+          <ResponseTime>
+               <WorstCase Unit="us">947.3663937889094</WorstCase>
+               <AverageCase Unit="us">146.30517405867002</AverageCase>
+               <BestCase Unit="us">32.426796013102745</BestCase>
+               <StdDeviation Unit="us">52.40096391339382</StdDeviation>
+          </ResponseTime>
+     </Thread>
+     <Thread Name="TimerThread">
+          <Threadname>TimerThread</Threadname>
+          <AssociatedID>5</AssociatedID>
+          <ExecutionTime>
+               <WorstCase Unit="us">189.13131254635783</WorstCase>
+               <AverageCase Unit="us">108.37233185292104</AverageCase>
+               <BestCase Unit="us">7.979211599893923</BestCase>
+               <StdDeviation Unit="us">40.2988746788056</StdDeviation>
+          </ExecutionTime>
+          <InterArrivalTime>
+               <Minimum Unit="us">59.87408403529425</Minimum>
+               <Maximum Unit="us">180651.33042598036</Maximum>
+               <ReleaseJitter Unit="us">180591.45634194504</ReleaseJitter>
+               <StdDeviation Unit="us">5509.195041225817</StdDeviation>
+          </InterArrivalTime>
+          <BlockingTime>
+               <Maximum Unit="us">0.0</Maximum>
+               <Average Unit="us">0.0</Average>
+               <Minimum Unit="us">0.0</Minimum>
+               <StdDeviation Unit="us">0.0</StdDeviation>
+          </BlockingTime>
+          <ResponseTime>
+               <WorstCase Unit="us">209.34931487090108</WorstCase>
+               <AverageCase Unit="us">124.3317776789392</AverageCase>
+               <BestCase Unit="us">11.908823327661231</BestCase>
+               <StdDeviation Unit="us">47.41112677584669</StdDeviation>
+          </ResponseTime>
+     </Thread>
+</SchedulingParameters>
