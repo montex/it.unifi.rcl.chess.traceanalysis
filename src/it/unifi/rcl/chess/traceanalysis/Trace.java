@@ -28,13 +28,17 @@ public class Trace {
 	}
 	
 	public Trace(File file) {
+		this();
+		
 		try {
 			InputStream is = new FileInputStream(file);
-			
 			// check if the file is compressed with gzip
-			if(Trace.checkGZIP(is)) {
-				is.close();
-				is = new GZIPInputStream(new FileInputStream(file));
+			boolean isZipped = Trace.checkGZIP(is);
+			is.close();
+			
+			is = new FileInputStream(file);
+			if(isZipped) {
+				is = new GZIPInputStream(is);
 			}
 			
 			Reader decoder = new InputStreamReader(is, "UTF-8");
@@ -69,6 +73,13 @@ public class Trace {
 		catch(IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public static void setSkipLineChar(char c) {
+		SKIPLINE_CHAR = c;
+	}
+	public static char getSkipLineChar() {
+		return SKIPLINE_CHAR;
 	}
 	
 	/**

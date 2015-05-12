@@ -4,6 +4,7 @@ import it.unifi.rcl.chess.traceanalysis.Trace;
 
 import javax.swing.JFrame;
 
+import java.awt.Container;
 import java.awt.Dimension;
 
 import javax.swing.AbstractAction;
@@ -25,20 +26,11 @@ import java.awt.BorderLayout;
 import javax.swing.JTabbedPane;
 import javax.swing.JLabel;
 import javax.swing.JButton;
-
-import com.jgoodies.forms.layout.FormLayout;
-import com.jgoodies.forms.layout.ColumnSpec;
-import com.jgoodies.forms.layout.RowSpec;
-import com.jgoodies.forms.factories.FormFactory;
-
 import javax.swing.JTextField;
 
-import java.awt.GridBagLayout;
-import java.awt.GridBagConstraints;
-import java.awt.Insets;
-import java.awt.GridLayout;
 import java.awt.FlowLayout;
-import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JProgressBar;
 import javax.swing.JTable;
@@ -54,6 +46,8 @@ public class TraceAnalyzerGUI implements Runnable {
 	private final JPanel pnlControls = new JPanel();
 	private JTextField txtFile;
 	private JTable table;
+	
+	private Map<Container,Trace> pnlToTrace = new HashMap<Container, Trace>();
 
 	/**
 	 * Launch the application.
@@ -118,69 +112,13 @@ public class TraceAnalyzerGUI implements Runnable {
 		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		pnlMain.add(tabbedPane, BorderLayout.CENTER);
 		
-		JLabel lblNoDataLoaded = new JLabel("No data loaded yet.\n");
-		tabbedPane.addTab("...", null, lblNoDataLoaded, null);
+//		JLabel lblNoDataLoaded = new JLabel("No data loaded yet.\n");
+//		tabbedPane.addTab("...", null, lblNoDataLoaded, null);
 		
-		JPanel pnlTemplateTab = new JPanel();
-		tabbedPane.addTab("Template", null, pnlTemplateTab, null);
-		pnlTemplateTab.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
-		
-		txtFile = new JTextField();
-		txtFile.setColumns(20);
-		txtFile.setText("File");
-		pnlTemplateTab.add(txtFile);
-		
-		JButton btnReload = new JButton("Reload");
-		btnReload.addActionListener(new LoadTraceAction("Reload", KeyEvent.VK_L));
-		pnlTemplateTab.add(btnReload);
-		
-		JButton btnUnload = new JButton("Unload");
-		pnlTemplateTab.add(btnUnload);
-		
-		JLabel lblSize = new JLabel("Size");
-		pnlTemplateTab.add(lblSize);
-		
-		JLabel lblPoints = new JLabel("#Points");
-		pnlTemplateTab.add(lblPoints);
-		
-		JProgressBar progressBar = new JProgressBar();
-		pnlTemplateTab.add(progressBar);
-		
-		JScrollPane scrollPane = new JScrollPane();
-		pnlTemplateTab.add(scrollPane);
-		
-		table = new JTable();
-		scrollPane.setViewportView(table);
-		table.setModel(new DefaultTableModel(
-			new Object[][] {
-				{null, null, null, null, null},
-				{null, null, null, null, null},
-				{null, null, null, null, null},
-				{null, null, null, null, null},
-				{null, null, null, null, null},
-			},
-			new String[] {
-				"Start", "End", "Confidence", "Distribution*", "Bound*"
-			}
-		) {
-			Class[] columnTypes = new Class[] {
-				Long.class, Long.class, Double.class, Object.class, Double.class
-			};
-			public Class getColumnClass(int columnIndex) {
-				return columnTypes[columnIndex];
-			}
-		});
-	}
-	
-	private class LoadTraceAction extends AbstractAction {
-		public LoadTraceAction(String name, Integer mnemonic) {
-			super(name);
-			putValue(MNEMONIC_KEY, mnemonic);
-		}
-		
-		@Override
-		public void actionPerformed(ActionEvent e) {
-			Trace t = new Trace("/home/montex/Lavoro/RCL/Progetti/CONCERTO/WP4/Adaptare/datasets/household_power_consumption.txt.gz");
-		};
+		JPanel pnlTrace1 = new TracePanel();
+		JPanel pnlTrace2 = new TracePanel();
+		tabbedPane.addTab("NewTrace1", pnlTrace1);
+		tabbedPane.addTab("NewTrace2", pnlTrace2);
+
 	}
 }
