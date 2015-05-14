@@ -1,6 +1,7 @@
 package it.unifi.rcl.chess.traceanalysis.gui;
 
 import it.unifi.rcl.chess.traceanalysis.Trace;
+import it.unifi.rcl.chess.traceanalysis.Utils;
 
 import javax.swing.JFrame;
 
@@ -8,6 +9,7 @@ import java.awt.Container;
 import java.awt.Dimension;
 
 import javax.swing.AbstractAction;
+import javax.swing.JFileChooser;
 import javax.swing.JPanel;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
@@ -29,7 +31,9 @@ import javax.swing.JButton;
 import javax.swing.JTextField;
 
 import java.awt.FlowLayout;
+import java.io.File;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import javax.swing.JProgressBar;
@@ -42,13 +46,15 @@ public class TraceAnalyzerGUI implements Runnable {
 	private final int MIN_WIDTH = 500;
 	private final int MIN_HEIGHT = 400;
 	
+	private static File fLastPath = new File(".").getAbsoluteFile();
+	
 	private JFrame frmChessProbabilisticTrace;
 	private final JPanel pnlControls = new JPanel();
 	private JTextField txtFile;
 	private JTable table;
+	private JButton btnLoadNewTrace;
+	private JTabbedPane tabbedPane;
 	
-	private Map<Container,Trace> pnlToTrace = new HashMap<Container, Trace>();
-
 	/**
 	 * Launch the application.
 	 */
@@ -106,19 +112,60 @@ public class TraceAnalyzerGUI implements Runnable {
 		pnlMain.setLayout(new BorderLayout(0, 0));
 		pnlMain.add(pnlControls, BorderLayout.NORTH);
 		
-		JButton btnLoadNewTrace = new JButton("Load New Trace");
+		btnLoadNewTrace = new JButton("Load New Trace");
+		btnLoadNewTrace.addActionListener(new ButtonAction("Load New Trace", KeyEvent.VK_T));
 		pnlControls.add(btnLoadNewTrace);
 		
-		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+		tabbedPane = new JTabbedPane(JTabbedPane.TOP);
 		pnlMain.add(tabbedPane, BorderLayout.CENTER);
 		
-//		JLabel lblNoDataLoaded = new JLabel("No data loaded yet.\n");
-//		tabbedPane.addTab("...", null, lblNoDataLoaded, null);
-		
-		JPanel pnlTrace1 = new TracePanel();
-		JPanel pnlTrace2 = new TracePanel();
-		tabbedPane.addTab("NewTrace1", pnlTrace1);
-		tabbedPane.addTab("NewTrace2", pnlTrace2);
+//		JPanel pnlTrace1 = new TracePanel();
+//		JPanel pnlTrace2 = new TracePanel();
+//		tabbedPane.addTab("NewTrace1", pnlTrace1);
+//		tabbedPane.addTab("NewTrace2", pnlTrace2);
 
+	}
+	
+	private class ButtonAction extends AbstractAction {
+		
+		public ButtonAction(String name, Integer mnemonic) {
+			super(name);
+			putValue(MNEMONIC_KEY, mnemonic);
+		}
+		
+		@Override
+		public void actionPerformed(ActionEvent e) {
+			
+			Object src = e.getSource();
+			
+			if(src == btnLoadNewTrace) {
+				JFileChooser jfile = new JFileChooser(fLastPath);
+				jfile.setMultiSelectionEnabled(true);
+		        int returnVal = jfile.showOpenDialog(TraceAnalyzerGUI.this.frmChessProbabilisticTrace);
+
+		        if (returnVal == JFileChooser.APPROVE_OPTION) {
+		            File[] files = jfile.getSelectedFiles();
+		            TraceAnalyzerGUI.fLastPath = files[0];
+		            
+		            String shortTitle = "";
+		            String tooltip = "";
+		            
+		            for(int i = 0; i < files.length; i++) {
+		            	TracePanel tPanel = new TracePanel(files[i]);
+		            	
+		            	tooltip = files[i].getAbsolutePath();
+		            	shortTitle = Utils.abbreviateMiddle(tooltip, "...", 20); 
+		            	
+			            tabbedPane.addTab(shortTitle, tPanel);
+			            tabbedPane.setToolTipTextAt(tabbedPane.indexOfComponent(tPanel), tooltip);
+			            tabbedPane.setSelectedComponent(tPanel);
+		            }
+		            
+		            frmChessProbabilisticTrace.pack();
+		        }else {
+
+		        }
+			}
+		};
 	}
 }

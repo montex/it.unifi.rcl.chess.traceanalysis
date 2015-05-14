@@ -121,6 +121,8 @@ public class AdaptareTest {
 				double bound = MonitoringService.getBound(data, coverage[i], data.size());
 				System.out.println("Bound (" + coverage[i]*100 + "%): " + bound);
 			}
+			
+			
 		}catch(MonitoringServiceException mse) {
 			mse.printStackTrace();
 		}
