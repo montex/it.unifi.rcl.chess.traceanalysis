@@ -9,6 +9,7 @@ import it.unifi.rcl.chess.traceanalysis.Trace;
 
 import javax.swing.AbstractAction;
 import javax.swing.JButton;
+import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
@@ -40,6 +41,7 @@ public class TracePanel extends JPanel {
 	JLabel lblFileName;
 	JLabel lblFilePath;
 	JLabel lblStat;
+	JButton btnPlot;
 	
 	public TracePanel() {
 		initialize();
@@ -135,7 +137,7 @@ public class TracePanel extends JPanel {
 		}else{
 			lblPoints.setText(trace.getSampleSize() + " points loaded.");
 			
-			lblStat.setText("Min: " + trace.getMin() + " Max: " + trace.getMax() + " Mean: " + trace.getMean());
+			lblStat.setText("Min: " + trace.getMin() + " Max: " + trace.getMax() + " Mean: " + trace.getAverage());
 		}
 		
 		updateBounds();
@@ -209,6 +211,10 @@ public class TracePanel extends JPanel {
 		btnUpdate.addActionListener(new ButtonAction("Update", KeyEvent.VK_U));
 		this.add(btnUpdate);
 		
+		btnPlot = new JButton("Plot");
+		btnPlot.addActionListener(new ButtonAction("Plot", KeyEvent.VK_P));
+		this.add(btnPlot);
+		
 		reset();
 	}
 	
@@ -231,6 +237,13 @@ public class TracePanel extends JPanel {
 				dispose();
 			}else if(src == btnUpdate) {
 				updateBounds();
+			}else if(src == btnPlot) {
+				JPanel plotPanel = trace.plotDynamicBound(0.99, 200); 
+				JFrame plotFrame = new JFrame();
+				plotFrame.add(plotPanel);
+				plotFrame.setVisible(true);
+				plotFrame.pack();
+				plotFrame.setTitle(TracePanel.this.file.getName());
 			}
 		};
 	}

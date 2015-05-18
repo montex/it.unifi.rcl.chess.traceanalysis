@@ -8,11 +8,22 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PushbackInputStream;
 import java.io.Reader;
+import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
+
+import javax.swing.JPanel;
+
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 
 import monitoringService.MonitoringService;
 import monitoringService.distributions.Distribution;
@@ -112,7 +123,7 @@ public class Trace {
 		return Collections.max(data);
 	}
 	
-	public double getMean() {
+	public double getAverage() {
 		double sum = 0;
 		
 		Iterator<Double> i = data.iterator();
@@ -126,23 +137,33 @@ public class Trace {
 	public double getBound(double coverage) {
 		
 		double ret = 0;
+		forbidSystemExitCall();
 		try {
 			ret = MonitoringService.getBound(data, coverage, data.size());
 		} catch (MonitoringServiceException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} 
+		} catch (ExitTrappedException e) {
+			ret = Double.NaN;
+		} finally {
+			enableSystemExitCall();
+		}
 		return ret;
 	}
 	
 	public Distribution getDistribution(double coverage) {
 		Distribution d = null;
+		forbidSystemExitCall();
 		try {
 			MechanismAD_KS m = new MechanismAD_KS();
 			d = m.getDistribution(data, coverage, data.size());
 		} catch (MonitoringServiceException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		} catch (ExitTrappedException e) {
+			d = new Distribution();
+		} finally {
+			enableSystemExitCall();
 		}
 		return d;
 	}
@@ -157,6 +178,71 @@ public class Trace {
 			dName = "N/A";
 		
 		return dName;
+	}
+	
+	public JPanel plotDynamicBound(double coverage, int window) {
+		// Create a simple XY chart
+		XYSeries series = new XYSeries("Samples");
+		XYSeries bounds = new XYSeries("Bounds");
+		
+		for(int i = 0; i < data.size(); i++) {
+			series.add(i+1, data.get(i));
+		}
+
+		int len = data.size();
+		double b = 0;
+		for(int i = 0; i + window < len; i++) {
+			b = 0;
+			try {
+				b = getSubTrace(i+1, i+window).getBound(coverage);
+			}catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			if(i == 0) {
+				for(int j = i; j < i + window; j++) {
+					bounds.add(j, b);
+				}
+			}else{
+				bounds.add(i + window, b);
+			}
+//			for(int j = i; j < i + window; j++) {
+//				bounds.add(j+1, b);
+//				System.out.println((j+1)+" "+b);
+//			}
+			System.out.println("-------------------------");
+		}
+		
+		// Add the series to your data set
+		XYSeriesCollection dataset = new XYSeriesCollection();
+		dataset.addSeries(series);
+		dataset.addSeries(bounds);
+		
+		// Generate the graph
+		JFreeChart chart = ChartFactory.createXYLineChart(
+		"XY Chart",
+		// Title
+		"x-axis",
+		// x-axis Labels
+		"y-axis",
+		// y-axis Label
+		dataset,
+		// Dataset
+		PlotOrientation.VERTICAL, // Plot Orientation
+		false,
+		// Show Legend
+		true,
+		// Use tooltips
+		false
+		// Configure chart to generate URLs?
+		);
+		
+		try {
+			ChartUtilities.saveChartAsJPEG(new File("/home/montex/chart.jpg"), chart, 1000, 600);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return new ChartPanel(chart);
 	}
 	
 	/**
@@ -174,5 +260,23 @@ public class Trace {
 	       return true;
 	     else 
 	       return false;
+	}
+	
+	/* This is required to avoid ADAPTARE quit the application with certain inputs */
+	private static class ExitTrappedException extends SecurityException { }
+
+	private static void forbidSystemExitCall() {
+	  final SecurityManager securityManager = new SecurityManager() {
+	    public void checkPermission( Permission permission ) {
+	      if( permission.getName().contains("exitVM") ) {
+	        throw new ExitTrappedException() ;
+	      }
+	    }
+	  } ;
+	  System.setSecurityManager( securityManager ) ;
+	}
+
+	private static void enableSystemExitCall() {
+	  System.setSecurityManager( null ) ;
 	}
 }
