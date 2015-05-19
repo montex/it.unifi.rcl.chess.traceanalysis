@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PushbackInputStream;
 import java.io.Reader;
+import java.io.UnsupportedEncodingException;
 import java.security.Permission;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,8 +48,6 @@ public class Trace {
 	public Trace(File file) {
 		this();
 		
-		int numLines = 0, numSkipped = 0;
-		
 		try {
 			InputStream is = new FileInputStream(file);
 			// check if the file is compressed with gzip
@@ -60,38 +59,53 @@ public class Trace {
 				is = new GZIPInputStream(is);
 			}
 			
-			Reader decoder = new InputStreamReader(is, "UTF-8");
-			BufferedReader br = new BufferedReader(decoder);
+			loadFromStream(is);
 			
-			String line = "";			
-			double tmpValue = 0;
-			
-			while((line = br.readLine()) != null) {
-//				System.out.println(line);
-				line = line.trim();
-
-				if(line.charAt(0) != SKIPLINE_CHAR) {
-					try {
-						tmpValue = Double.parseDouble(line);
-						data.add(tmpValue);
-					}
-					catch(NumberFormatException nfe) {
-						System.out.println("Warning: Line " + (numLines+1) + " in the dataset has been skipped");
-						System.out.println(line);
-						numSkipped++;
-					}
-				}else{
-					numSkipped++;
-				}
-				numLines++;
-			}
-			
-			br.close();
 			is.close();
 		}
 		catch(IOException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public Trace(InputStream is) {
+		this();
+		try {
+			loadFromStream(is);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	private void loadFromStream(InputStream is) throws IOException {
+		int numLines = 0, numSkipped = 0;
+		
+		Reader decoder = new InputStreamReader(is, "UTF-8");
+		BufferedReader br = new BufferedReader(decoder);
+		
+		String line = "";			
+		double tmpValue = 0;
+		
+		while((line = br.readLine()) != null) {
+//			System.out.println(line);
+			line = line.trim();
+
+			if(line.charAt(0) != SKIPLINE_CHAR) {
+				try {
+					tmpValue = Double.parseDouble(line);
+					data.add(tmpValue);
+				}
+				catch(NumberFormatException nfe) {
+					System.out.println("Warning: Line " + (numLines+1) + " in the dataset has been skipped");
+					System.out.println(line);
+					numSkipped++;
+				}
+			}else{
+				numSkipped++;
+			}
+			numLines++;
+		}		
 	}
 	
 	public static void setSkipLineChar(char c) {

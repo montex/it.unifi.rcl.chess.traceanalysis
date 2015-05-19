@@ -82,6 +82,17 @@ public class TracePanel extends JPanel {
 		loadTrace(new File(fileName));
 	}
 	
+	public void loadTrace(Trace t) {
+		reset();
+		trace = t;
+		
+		table.setValueAt(1, 0, 0);
+		table.setValueAt(trace.getSampleSize(), 0, 1);
+		table.setValueAt(0.99, 0, 2);
+				
+		refresh();
+	}
+	
 	public void unloadTrace() {
 		reset();
 	}
@@ -244,6 +255,7 @@ public class TracePanel extends JPanel {
 				plotFrame.setVisible(true);
 				plotFrame.pack();
 				plotFrame.setTitle(TracePanel.this.file.getName());
+				plotFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 			}
 		};
 	}
