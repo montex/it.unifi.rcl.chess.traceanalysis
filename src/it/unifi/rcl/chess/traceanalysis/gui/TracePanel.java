@@ -18,6 +18,8 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.event.CellEditorListener;
+import javax.swing.event.ChangeEvent;
 import javax.swing.table.DefaultTableModel;
 
 import monitoringService.MonitoringService;
@@ -116,19 +118,24 @@ public class TracePanel extends JPanel {
 		Trace tempTrace = null;
 		
 		for(int i = 0; i < table.getRowCount(); i++) {
-			try {
-				n1 = (Integer)table.getValueAt(i, 0);
-				n2 = (Integer)table.getValueAt(i, 1);
-				c = (Double)table.getValueAt(i, 2);
-				
-				tempTrace = trace.getSubTrace(n1, n2);
-				table.setValueAt(tempTrace.getDistributionReadable(c), i, 3);
-				table.setValueAt(tempTrace.getBound(c), i, 4);			
-			}
-			catch(Exception e) {
-				table.setValueAt("Error", i, 3);
+			if(table.getValueAt(i, 0) == null || table.getValueAt(i, 1) == null || table.getValueAt(i, 2) == null) {
+				table.setValueAt(null, i, 3);
 				table.setValueAt(null, i, 4);
-				e.printStackTrace();
+			}else {
+				try {
+					n1 = (Integer)table.getValueAt(i, 0);
+					n2 = (Integer)table.getValueAt(i, 1);
+					c = (Double)table.getValueAt(i, 2);
+					
+					tempTrace = trace.getSubTrace(n1, n2);
+					table.setValueAt(tempTrace.getDistributionReadable(c), i, 3);
+					table.setValueAt(tempTrace.getBound(c), i, 4);			
+				}
+				catch(Exception e) {
+					table.setValueAt("Error", i, 3);
+					table.setValueAt(null, i, 4);
+					e.printStackTrace();
+				}
 			}
 		}
 	}
@@ -196,7 +203,7 @@ public class TracePanel extends JPanel {
 		scrollPane = new JScrollPane();
 		this.add(scrollPane);
 		
-		table = new JTable();
+		table = new JDynamicTable();
 		scrollPane.setViewportView(table);
 		table.setModel(new DefaultTableModel(
 			new Object[][] {
@@ -217,6 +224,7 @@ public class TracePanel extends JPanel {
 				return columnTypes[columnIndex];
 			}
 		});
+		
 		
 		btnUpdate = new JButton("Update");
 		btnUpdate.addActionListener(new ButtonAction("Update", KeyEvent.VK_U));
