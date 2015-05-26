@@ -8,10 +8,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PushbackInputStream;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
 import java.security.Permission;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.zip.GZIPInputStream;
@@ -34,19 +32,18 @@ import monitoringService.util.MonitoringServiceException;
 public class Trace {
 	
 	private static char SKIPLINE_CHAR = '#'; 		// character meaning that a line should be discarded
+	private static String NO_NAME = "{unnamed}";
 	
 	private ArrayList<Double> data;					// the data
+	private String name = NO_NAME;
 	
 	public Trace() {
 		data = new ArrayList<Double>();
 	}
 	
-	public Trace(String fileName) {
-		this(new File(fileName));
-	}
-	
 	public Trace(File file) {
 		this();
+		name = file.getAbsolutePath();
 		
 		try {
 			InputStream is = new FileInputStream(file);
@@ -76,6 +73,18 @@ public class Trace {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+	}
+	
+	public void setName(String name) {
+		this.name = name;
+	}
+	
+	public String getName() {
+		return name;
+	}
+	
+	public String getName(int lenght) {
+		return Utils.abbreviateMiddle(getName(), "...", lenght);
 	}
 	
 	private void loadFromStream(InputStream is) throws IOException {
@@ -183,15 +192,26 @@ public class Trace {
 	}
 	
 	public String getDistributionReadable(double coverage) {
-		Distribution d = getDistribution(coverage);
-		String dName = d.getClass().getSimpleName();
+		return Utils.distributionToString(getDistribution(coverage));
+	}
+	
+	public Distribution[] getPhases(double coverage, int window) {
+		int len = data.size();
+		Distribution d = null;
+		Distribution[] dArray = new Distribution[len];
 		
-		dName = dName.substring(0, dName.indexOf("Distribution"));
+		for(int i = 0; i + window < len; i++) {
+			try {
+				d = getSubTrace(i+1, i+window).getDistribution(coverage);
+			}catch (Exception e) {
+				e.printStackTrace();
+			}
+			dArray[i] = d;
+			
+			System.out.println(i + " > " +Utils.distributionToString(d));
+		}
 		
-		if(dName.trim().isEmpty())
-			dName = "N/A";
-		
-		return dName;
+		return dArray;
 	}
 	
 	public JPanel plotDynamicBound(double coverage, int window) {

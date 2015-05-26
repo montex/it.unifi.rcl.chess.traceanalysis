@@ -112,7 +112,7 @@ public class TraceAnalyzerGUI implements Runnable {
 		frmChessProbabilisticTrace = new JFrame();
 		frmChessProbabilisticTrace.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frmChessProbabilisticTrace.setTitle("CHESS Probabilistic Trace Analyzer");
-		
+				
 		JMenuBar menuBar = new JMenuBar();
 		frmChessProbabilisticTrace.setJMenuBar(menuBar);
 		
@@ -347,7 +347,7 @@ public class TraceAnalyzerGUI implements Runnable {
 			        tabbedPane.addTab(shortTitle, tPanel);
 			        tabbedPane.setToolTipTextAt(tabbedPane.indexOfComponent(tPanel), tooltip);
 			        tabbedPane.setSelectedComponent(tPanel);
-					tPanel.loadTrace(t);
+					tPanel.loadTrace(t, tooltip);
 					frmChessProbabilisticTrace.pack();
 				}
 			}

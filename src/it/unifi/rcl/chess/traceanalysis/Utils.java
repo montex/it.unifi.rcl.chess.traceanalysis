@@ -1,6 +1,25 @@
 package it.unifi.rcl.chess.traceanalysis;
 
+import monitoringService.distributions.Distribution;
+
 public class Utils {
+	
+	public static String distributionToString(Distribution d) {
+		String name = "N/A";
+		
+		if(d != null) {
+			name = d.getClass().getSimpleName();
+			name = name.substring(0, name.indexOf("Distribution"));
+			
+			if(name.trim().isEmpty())
+				name = "{Unstable}";
+		}
+		
+		return name;
+	}
+	
+	
+	
     // Abbreviating
     //-----------------------------------------------------------------------
     /**

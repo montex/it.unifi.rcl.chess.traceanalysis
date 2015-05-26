@@ -1,5 +1,6 @@
 package it.unifi.rcl.chess.traceanalysis.gui;
 
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
@@ -8,6 +9,7 @@ import java.io.File;
 import it.unifi.rcl.chess.traceanalysis.Trace;
 
 import javax.swing.AbstractAction;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -29,19 +31,18 @@ public class TracePanel extends JPanel {
 	private static final String TXT_NOFILE = "No file loaded.";
 	
 	private Trace trace;
-	private File file;
 
 	JTextField txtFile;
-	JButton btnReload;
-	JButton btnClose;
-	JButton btnUpdate;
+	JButton btnReload, btnClose;
+	JButton btnUpdateTable, btnClearTable;
+	JButton btnPhaseDetection;
 	JLabel lblSize;
 	JLabel lblPoints;	
 	JProgressBar progressBar;
-	JScrollPane scrollPane;
-	JTable table;
-	JLabel lblFileName;
-	JLabel lblFilePath;
+	JScrollPane scrollTabBounds, scrollTabWSize;
+	BoundsTable tableBounds;
+	JDynamicTable tableWindowSize;
+	JLabel lblTraceName;
 	JLabel lblStat;
 	JButton btnPlot;
 	
@@ -68,97 +69,33 @@ public class TracePanel extends JPanel {
 		return trace;
 	}
 	
-	public void loadTrace(File file) {
-		reset();
-		trace = new Trace(file);
-		this.file = file;
-		
-		table.setValueAt(1, 0, 0);
-		table.setValueAt(trace.getSampleSize(), 0, 1);
-		table.setValueAt(0.99, 0, 2);
-				
-		refresh();
+	public void loadTrace(File file) {;
+		loadTrace(new Trace(file), file.getAbsolutePath());
 	}
 	
-	public void loadTrace(String fileName) {
-		loadTrace(new File(fileName));
-	}
-	
-	public void loadTrace(Trace t) {
-		reset();
+	public void loadTrace(Trace t, String name) {	
 		trace = t;
 		
-		table.setValueAt(1, 0, 0);
-		table.setValueAt(trace.getSampleSize(), 0, 1);
-		table.setValueAt(0.99, 0, 2);
-				
-		refresh();
-	}
-	
-	public void unloadTrace() {
-		reset();
-	}
-	
-	private void reset() {
-		trace = null;
-		file = null;
-		
-		for(int i = 0; i < table.getRowCount(); i++) {
-			for(int j = 0; j< table.getColumnCount(); j++) {
-				table.setValueAt(null, i, j);
-			}
-		}
+		tableBounds.setTrace(trace);
 		
 		refresh();
-	}
-	
-	private void updateBounds() {
-		int n1 = 0, n2 = 0;
-		double c = 0;
-		Trace tempTrace = null;
-		
-		for(int i = 0; i < table.getRowCount(); i++) {
-			if(table.getValueAt(i, 0) == null || table.getValueAt(i, 1) == null || table.getValueAt(i, 2) == null) {
-				table.setValueAt(null, i, 3);
-				table.setValueAt(null, i, 4);
-			}else {
-				try {
-					n1 = (Integer)table.getValueAt(i, 0);
-					n2 = (Integer)table.getValueAt(i, 1);
-					c = (Double)table.getValueAt(i, 2);
-					
-					tempTrace = trace.getSubTrace(n1, n2);
-					table.setValueAt(tempTrace.getDistributionReadable(c), i, 3);
-					table.setValueAt(tempTrace.getBound(c), i, 4);			
-				}
-				catch(Exception e) {
-					table.setValueAt("Error", i, 3);
-					table.setValueAt(null, i, 4);
-					e.printStackTrace();
-				}
-			}
-		}
-	}
-	
+	}	
+
 	private void refresh() {		
-		if(file == null) {
-			lblFileName.setText(TXT_NOFILE);
-			lblFilePath.setText("");			
-		}else{
-			lblFileName.setText(file.getName());
-			lblFilePath.setText(file.getParent());
-			lblFilePath.setToolTipText(file.getParent());
-		}
+		lblTraceName.setText(trace.getName(30));
+		lblTraceName.setToolTipText(trace.getName());;
 		
 		if(trace == null) {
 			lblPoints.setText("No data.");
 		}else{
 			lblPoints.setText(trace.getSampleSize() + " points loaded.");
 			
-			lblStat.setText("Min: " + trace.getMin() + " Max: " + trace.getMax() + " Mean: " + trace.getAverage());
+			lblStat.setText("<html>Min: " + trace.getMin() + 
+							"<br/>Max: " + trace.getMax() + 
+							"<br/>Average: " + trace.getAverage() + "</html>");
 		}
 		
-		updateBounds();
+		tableBounds.updateValues();
 	}
 
 	public void dispose() {
@@ -174,67 +111,93 @@ public class TracePanel extends JPanel {
 //		txtFile.setText("File");
 //		this.add(txtFile);
 		
+		JPanel pnlInfo = new JPanel();
+		JPanel pnlBound = new JPanel();
+		JPanel pnlPlot = new JPanel();
+		JPanel pnlPhases = new JPanel();
+		
+		pnlInfo.setLayout(new BoxLayout(pnlInfo, BoxLayout.Y_AXIS));
+		pnlBound.setLayout(new BoxLayout(pnlBound, BoxLayout.Y_AXIS));
+		pnlPlot.setLayout(new BoxLayout(pnlPlot, BoxLayout.Y_AXIS));
+		pnlPhases.setLayout(new BoxLayout(pnlPhases, BoxLayout.Y_AXIS));
+		
+		this.add(pnlInfo);
+		this.add(pnlBound);
+		this.add(pnlPlot);
+		this.add(pnlPhases);
+		
+		lblPoints = new JLabel("#Points");
+		pnlInfo.add(lblPoints);
+		
+		lblTraceName = new JLabel();
+		pnlInfo.add(lblTraceName);
+				
 		btnReload = new JButton("Reload");
 		btnReload.addActionListener(new ButtonAction("Reload", KeyEvent.VK_L));
-		this.add(btnReload);
+		pnlInfo.add(btnReload);
 		
 		btnClose = new JButton("Close");
 		btnClose.addActionListener(new ButtonAction("Close", KeyEvent.VK_U));
-		this.add(btnClose);
-		
-//		lblSize = new JLabel("Size");
-//		this.add(lblSize);
-		
-		lblPoints = new JLabel("#Points");
-		this.add(lblPoints);
-		
-		lblFileName = new JLabel();
-		this.add(lblFileName);
-		
-		lblFilePath = new JLabel();
-		this.add(lblFilePath);
+		pnlInfo.add(btnClose);
 		
 		lblStat = new JLabel();
-		this.add(lblStat);
+		pnlInfo.add(lblStat);
 		
 //		progressBar = new JProgressBar();
 //		this.add(progressBar);
 		
-		scrollPane = new JScrollPane();
-		this.add(scrollPane);
+		scrollTabBounds = new JScrollPane();
+		scrollTabBounds.setPreferredSize(new Dimension(400,100));
+		pnlBound.add(scrollTabBounds);
 		
-		table = new JDynamicTable();
-		scrollPane.setViewportView(table);
-		table.setModel(new DefaultTableModel(
-			new Object[][] {
-				{null, null, null, null, null},
-				{null, null, null, null, null},
-				{null, null, null, null, null},
-				{null, null, null, null, null},
-				{null, null, null, null, null},
-			},
-			new String[] {
-				"Start", "End", "Confidence", "Distribution*", "Bound*"
-			}
-		) {
-			Class[] columnTypes = new Class[] {
-				Integer.class, Integer.class, Double.class, String.class, Double.class
-			};
-			public Class getColumnClass(int columnIndex) {
-				return columnTypes[columnIndex];
-			}
-		});
+		tableBounds = new BoundsTable();
+		scrollTabBounds.setViewportView(tableBounds);
 		
 		
-		btnUpdate = new JButton("Update");
-		btnUpdate.addActionListener(new ButtonAction("Update", KeyEvent.VK_U));
-		this.add(btnUpdate);
+		btnUpdateTable = new JButton("Update");
+		btnUpdateTable.addActionListener(new ButtonAction("Update", KeyEvent.VK_U));
+		pnlBound.add(btnUpdateTable);
 		
+		btnClearTable = new JButton("Clear Table");
+		btnClearTable.addActionListener(new ButtonAction("Clear Table", KeyEvent.VK_C));
+		pnlBound.add(btnClearTable);
+		
+		scrollTabWSize = new JScrollPane();
+		scrollTabWSize.setPreferredSize(new Dimension(100,100));
+		pnlPlot.add(scrollTabWSize);
+		
+		tableWindowSize = new JDynamicTable();
+		tableWindowSize.setModel(new DefaultTableModel(
+				new Object[][] {
+						{100},
+						{null}
+					},
+					new String[] {
+						"WindowSize"
+					}
+				) {
+			
+					Class[] columnTypes = new Class[] {
+						Integer.class
+					};
+					public Class getColumnClass(int columnIndex) {
+						return columnTypes[columnIndex];
+					}
+				});
+		tableWindowSize.setMonitoredColumn(0);
+		scrollTabWSize.setViewportView(tableWindowSize);
+
 		btnPlot = new JButton("Plot");
 		btnPlot.addActionListener(new ButtonAction("Plot", KeyEvent.VK_P));
-		this.add(btnPlot);
+		pnlPlot.add(btnPlot);		
 		
-		reset();
+		btnPhaseDetection = new JButton("Phases Detection");;
+		btnPhaseDetection.addActionListener(new ButtonAction("PhasesDetection", KeyEvent.VK_P));
+		pnlPhases.add(btnPhaseDetection);
+	}
+	
+	private void phaseDetection() {
+		trace.getPhases(0.99, 20);
 	}
 	
 	private class ButtonAction extends AbstractAction {
@@ -250,21 +213,25 @@ public class TracePanel extends JPanel {
 			Object src = e.getSource();
 			
 			if(src == btnReload) {
-				loadTrace(txtFile.getText());
+				loadTrace(new File(txtFile.getText()));
 				refresh();
 			}else if(src == btnClose) {
 				dispose();
-			}else if(src == btnUpdate) {
-				updateBounds();
+			}else if(src == btnUpdateTable) {
+				tableBounds.updateValues();
+			}else if(src == btnClearTable) {
+				tableBounds.reset();
 			}else if(src == btnPlot) {
 				JPanel plotPanel = trace.plotDynamicBound(0.99, 200); 
 				JFrame plotFrame = new JFrame();
 				plotFrame.add(plotPanel);
 				plotFrame.setVisible(true);
 				plotFrame.pack();
-				plotFrame.setTitle(TracePanel.this.file.getName());
+				plotFrame.setTitle(TracePanel.this.trace.getName());
 				plotFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+			}else if(src == btnPhaseDetection) {
+				phaseDetection();
 			}
 		};
-	}
+	}	
 }
