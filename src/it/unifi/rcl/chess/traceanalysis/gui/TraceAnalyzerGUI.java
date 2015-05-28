@@ -333,21 +333,20 @@ public class TraceAnalyzerGUI implements Runnable {
 			
 			Trace t = null;
 			InputStream is = null;
-			String tooltip, shortTitle;
+
 			if(filesToOpen != null) {
 				for(int i = 0; i < filesToOpen.length; i++) {
 					System.out.println(filesToOpen[i]);
 					is = ClassLoader.getSystemClassLoader().getResourceAsStream(RES_EXAMPLES_PATH + "/" + filesToOpen[i].getFullPath());
-					
-			        tooltip = "examples/" + filesToOpen[i].getFullPath();
-			        shortTitle = Utils.abbreviateMiddle(tooltip, "...", 20); 
-					
+										
 					t = new Trace(is);
+					t.setName("examples/" + filesToOpen[i].getFullPath());
+					
 					TracePanel tPanel = new TracePanel();
-			        tabbedPane.addTab(shortTitle, tPanel);
-			        tabbedPane.setToolTipTextAt(tabbedPane.indexOfComponent(tPanel), tooltip);
+			        tabbedPane.addTab(t.getName(25), tPanel);
+			        tabbedPane.setToolTipTextAt(tabbedPane.indexOfComponent(tPanel), t.getName());
 			        tabbedPane.setSelectedComponent(tPanel);
-					tPanel.loadTrace(t, tooltip);
+					tPanel.loadTrace(t, t.getName());
 					frmChessProbabilisticTrace.pack();
 				}
 			}
