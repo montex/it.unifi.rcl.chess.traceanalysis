@@ -5,6 +5,7 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.util.ArrayList;
 
 import it.unifi.rcl.chess.traceanalysis.Trace;
 
@@ -24,6 +25,13 @@ import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.table.DefaultTableModel;
 
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+
 import monitoringService.MonitoringService;
 
 public class TracePanel extends JPanel {
@@ -34,7 +42,7 @@ public class TracePanel extends JPanel {
 
 	JTextField txtFile;
 	JButton btnReload, btnClose;
-	JButton btnUpdateTable, btnClearTable;
+	JButton btnUpdateBoundsTable, btnClearBoundsTable;
 	JButton btnPhaseDetection;
 	JLabel lblSize;
 	JLabel lblPoints;	
@@ -44,7 +52,7 @@ public class TracePanel extends JPanel {
 	JDynamicTable tableWindowSize;
 	JLabel lblTraceName;
 	JLabel lblStat;
-	JButton btnPlot;
+	JButton btnPlot, btnClearWSizeTable;
 	
 	public TracePanel() {
 		initialize();
@@ -154,13 +162,13 @@ public class TracePanel extends JPanel {
 		scrollTabBounds.setViewportView(tableBounds);
 		
 		
-		btnUpdateTable = new JButton("Update");
-		btnUpdateTable.addActionListener(new ButtonAction("Update", KeyEvent.VK_U));
-		pnlBound.add(btnUpdateTable);
+		btnUpdateBoundsTable = new JButton("Update");
+		btnUpdateBoundsTable.addActionListener(new ButtonAction("Update", KeyEvent.VK_U));
+		pnlBound.add(btnUpdateBoundsTable);
 		
-		btnClearTable = new JButton("Clear Table");
-		btnClearTable.addActionListener(new ButtonAction("Clear Table", KeyEvent.VK_C));
-		pnlBound.add(btnClearTable);
+		btnClearBoundsTable = new JButton("Clear Table");
+		btnClearBoundsTable.addActionListener(new ButtonAction("Clear Table", KeyEvent.VK_C));
+		pnlBound.add(btnClearBoundsTable);
 		
 		scrollTabWSize = new JScrollPane();
 		scrollTabWSize.setPreferredSize(new Dimension(100,100));
@@ -169,27 +177,32 @@ public class TracePanel extends JPanel {
 		tableWindowSize = new JDynamicTable();
 		tableWindowSize.setModel(new DefaultTableModel(
 				new Object[][] {
-						{100},
-						{null}
+						{100,0.99},
+						{null,null}
 					},
 					new String[] {
-						"WindowSize"
+						"WindowSize", "Confidence"
 					}
 				) {
 			
 					Class[] columnTypes = new Class[] {
-						Integer.class
+						Integer.class, Double.class
 					};
 					public Class getColumnClass(int columnIndex) {
 						return columnTypes[columnIndex];
 					}
 				});
 		tableWindowSize.setMonitoredColumn(0);
+		tableWindowSize.setMonitoredColumn(1);
 		scrollTabWSize.setViewportView(tableWindowSize);
 
 		btnPlot = new JButton("Plot");
 		btnPlot.addActionListener(new ButtonAction("Plot", KeyEvent.VK_P));
-		pnlPlot.add(btnPlot);		
+		pnlPlot.add(btnPlot);
+		
+		btnClearWSizeTable = new JButton("Clear Table");
+		btnClearWSizeTable.addActionListener(new ButtonAction("Clear Table", KeyEvent.VK_C));
+		pnlPlot.add(btnClearWSizeTable);	
 		
 		btnPhaseDetection = new JButton("Phases Detection");;
 		btnPhaseDetection.addActionListener(new ButtonAction("PhasesDetection", KeyEvent.VK_P));
@@ -198,6 +211,53 @@ public class TracePanel extends JPanel {
 	
 	private void phaseDetection() {
 		trace.getPhases(0.99, 20);
+	}
+	
+	private void plotTrace() {
+		XYSeriesCollection dataset = new XYSeriesCollection();
+		
+		dataset.addSeries(Plotter.traceToSeries(trace));
+		
+		int rows = tableWindowSize.getRowCount();
+		double coverage;
+		int wsize;
+		for(int i = 0; i < rows; i++) {
+			try {
+				wsize = (Integer)tableWindowSize.getValueAt(i, 0);
+				coverage = (Double)tableWindowSize.getValueAt(i, 1);
+			
+				dataset.addSeries(Plotter.arrayToSeries(trace.getDynamicBound(coverage, wsize), "c="+coverage+",w="+wsize));
+			}catch(NullPointerException e) {
+				;
+			}
+		}
+				
+		// Generate the graph
+		JFreeChart chart = ChartFactory.createXYLineChart(
+		"XY Chart",
+		// Title
+		"x-axis",
+		// x-axis Labels
+		"y-axis",
+		// y-axis Label
+		dataset,
+		// Dataset
+		PlotOrientation.VERTICAL, // Plot Orientation
+		false,
+		// Show Legend
+		true,
+		// Use tooltips
+		false
+		// Configure chart to generate URLs?
+		);
+		
+		JPanel plotPanel = new ChartPanel(chart);
+		JFrame plotFrame = new JFrame();
+		plotFrame.add(plotPanel);
+		plotFrame.setVisible(true);
+		plotFrame.pack();
+		plotFrame.setTitle(TracePanel.this.trace.getName());
+		plotFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 	}
 	
 	private class ButtonAction extends AbstractAction {
@@ -217,18 +277,16 @@ public class TracePanel extends JPanel {
 				refresh();
 			}else if(src == btnClose) {
 				dispose();
-			}else if(src == btnUpdateTable) {
+			}else if(src == btnUpdateBoundsTable) {
 				tableBounds.updateValues();
-			}else if(src == btnClearTable) {
+			}else if(src == btnClearBoundsTable) {
 				tableBounds.reset();
 			}else if(src == btnPlot) {
-				JPanel plotPanel = trace.plotDynamicBound(0.99, 200); 
-				JFrame plotFrame = new JFrame();
-				plotFrame.add(plotPanel);
-				plotFrame.setVisible(true);
-				plotFrame.pack();
-				plotFrame.setTitle(TracePanel.this.trace.getName());
-				plotFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+				plotTrace();
+			}else if(src == btnClearWSizeTable) {
+				tableWindowSize.clear();
+				tableWindowSize.setValueAt(100,0,0);
+				tableWindowSize.setValueAt(0.99,0,1);
 			}else if(src == btnPhaseDetection) {
 				phaseDetection();
 			}

@@ -18,12 +18,11 @@ public class JDynamicTable extends JTable {
 
 	public void editingStopped(ChangeEvent e) {
 		super.editingStopped(e);
-		adaptRowCount();
-		
+		adaptRowCount();	
 	}
 	
 	private void adaptRowCount() {	
-		int iLastNonEmpty = 0;
+		int iLastNonEmpty = -1;
 		for(int i = 0; i < getRowCount(); i++) {
 			if(rowHasEmptyInput(i)) {
 				if(i != getRowCount()-1) {
@@ -61,4 +60,18 @@ public class JDynamicTable extends JTable {
 		return isEmpty;
 	}
 	
+	public void clear() {
+		for(int i = 0; i < getRowCount(); i++) {
+			for(int j = 0; j < getColumnCount(); j++) {
+				setValueAt(null, i, j);
+			}
+		}
+		adaptRowCount();
+	}
+	
+	@Override
+	public void setValueAt(Object aValue, int row, int column) {
+		super.setValueAt(aValue, row, column);
+		adaptRowCount();
+	}
 }

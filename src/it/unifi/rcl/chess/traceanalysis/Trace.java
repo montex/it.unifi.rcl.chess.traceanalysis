@@ -61,7 +61,7 @@ public class Trace {
 			is.close();
 		}
 		catch(IOException e) {
-			e.printStackTrace();
+			System.out.println(e);
 		}
 	}
 	
@@ -70,8 +70,7 @@ public class Trace {
 		try {
 			loadFromStream(is);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println(e);
 		}
 	}
 	
@@ -132,8 +131,8 @@ public class Trace {
 	public Trace getSubTrace(int start, int end) {
 		Trace t = new Trace();
 		
-		// in List.subList the second parameter is exclusive, index start from 0
-		t.data = new ArrayList<Double>(data.subList(start-1, end)); 
+		// NOTE: in List.subList the second parameter is exclusive, index starts from 0
+		t.data = new ArrayList<Double>(data.subList(start, end-1));
 		
 		return t;
 	}
@@ -164,8 +163,7 @@ public class Trace {
 		try {
 			ret = MonitoringService.getBound(data, coverage, data.size());
 		} catch (MonitoringServiceException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println(e);
 		} catch (ExitTrappedException e) {
 			ret = Double.NaN;
 		} finally {
@@ -181,8 +179,7 @@ public class Trace {
 			MechanismAD_KS m = new MechanismAD_KS();
 			d = m.getDistribution(data, coverage, data.size());
 		} catch (MonitoringServiceException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			System.out.println(e);
 		} catch (ExitTrappedException e) {
 			d = new Distribution();
 		} finally {
@@ -204,7 +201,7 @@ public class Trace {
 			try {
 				d = getSubTrace(i+1, i+window).getDistribution(coverage);
 			}catch (Exception e) {
-				e.printStackTrace();
+				System.out.println(e);
 			}
 			dArray[i] = d;
 			
@@ -214,69 +211,26 @@ public class Trace {
 		return dArray;
 	}
 	
-	public JPanel plotDynamicBound(double coverage, int window) {
-		// Create a simple XY chart
-		XYSeries series = new XYSeries("Samples");
-		XYSeries bounds = new XYSeries("Bounds");
+	public double[] getDynamicBound(double coverage, int window) {
+		double bounds[] = new double[data.size()];
 		
-		for(int i = 0; i < data.size(); i++) {
-			series.add(i+1, data.get(i));
-		}
-
-		int len = data.size();
-		double b = 0;
-		for(int i = 0; i + window < len; i++) {
-			b = 0;
-			try {
-				b = getSubTrace(i+1, i+window).getBound(coverage);
-			}catch (Exception e) {
-				e.printStackTrace();
+		for(int i = window-1; i < data.size(); i++) {
+			try{
+				bounds[i] = getSubTrace(i+1-window, i+1).getBound(coverage);
+			}catch(Exception e) {
+				System.out.println("Error: " + e.getMessage());
 			}
-			
-			if(i == 0) {
-				for(int j = i; j < i + window; j++) {
-					bounds.add(j, b);
-				}
-			}else{
-				bounds.add(i + window, b);
-			}
-//			for(int j = i; j < i + window; j++) {
-//				bounds.add(j+1, b);
-//				System.out.println((j+1)+" "+b);
-//			}
-			System.out.println("-------------------------");
 		}
 		
-		// Add the series to your data set
-		XYSeriesCollection dataset = new XYSeriesCollection();
-		dataset.addSeries(series);
-		dataset.addSeries(bounds);
-		
-		// Generate the graph
-		JFreeChart chart = ChartFactory.createXYLineChart(
-		"XY Chart",
-		// Title
-		"x-axis",
-		// x-axis Labels
-		"y-axis",
-		// y-axis Label
-		dataset,
-		// Dataset
-		PlotOrientation.VERTICAL, // Plot Orientation
-		false,
-		// Show Legend
-		true,
-		// Use tooltips
-		false
-		// Configure chart to generate URLs?
-		);
-		
-		try {
-			ChartUtilities.saveChartAsJPEG(new File("/home/montex/chart.jpg"), chart, 1000, 600);
-		} catch (IOException e) {
-			e.printStackTrace();
+		for(int i = 0; i < window-1; i++) {
+			bounds[i] = bounds[window-1];
 		}
-		return new ChartPanel(chart);
+	
+		return bounds;		
+	}
+	
+	public double getValueAt(int index) {
+		return data.get(index);
 	}
 	
 	/**
