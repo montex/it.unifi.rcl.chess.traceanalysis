@@ -61,6 +61,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.JScrollPane;
 
 import org.eclipse.core.runtime.Platform;
+import org.osgi.framework.FrameworkUtil;
 
 public class TraceAnalyzerGUI implements Runnable {
 
@@ -336,7 +337,7 @@ public class TraceAnalyzerGUI implements Runnable {
 
 			if(filesToOpen != null) {
 				for(int i = 0; i < filesToOpen.length; i++) {
-					System.out.println(filesToOpen[i]);
+
 					is = ClassLoader.getSystemClassLoader().getResourceAsStream(RES_EXAMPLES_PATH + "/" + filesToOpen[i].getFullPath());
 										
 					t = new Trace(is);

@@ -73,7 +73,7 @@ public class BoundsTable extends JDynamicTable {
 				n2 = (Integer)getValueAt(row, 1);
 				c = (Double)getValueAt(row, 2);
 				
-				tempTrace = trace.getSubTrace(n1, n2);
+				tempTrace = trace.getSubTrace(n1-1, n2-1);
 				setValueAt(tempTrace.getDistributionReadable(c), row, 3);
 				setValueAt(tempTrace.getBound(c), row, 4);			
 			}

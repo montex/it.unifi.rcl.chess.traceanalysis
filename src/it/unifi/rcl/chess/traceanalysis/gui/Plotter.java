@@ -43,9 +43,26 @@ public class Plotter {
 	}
 	
 	public static XYSeries arrayToSeries(double[] values, String name) {
+		return arrayToSeries(values, name, 0);
+	}
+	
+	public static XYSeries valueToSeries(double value, String name, int lenght) {
+		double[] values = new double[lenght];
+		for(int i = 0; i < lenght; i++) {
+			values[i] = value;
+		}
+		return arrayToSeries(values, name, 0);
+	}
+	
+	public static XYSeries arrayToSeries(double[] values, String name, int offset) {
 		XYSeries s = new XYSeries(name);
-		for(int i = 0; i < values.length; i++) {
-			s.add(i+1, values[i]);
+		
+		for(int i = 0; i < offset; i++) {
+			s.add(i+1,null);
+		}
+		
+		for(int i = 0 + offset ; i < values.length + offset; i++) {
+			s.add(i+1, values[i-offset]);
 		}
 		return s;
 	}

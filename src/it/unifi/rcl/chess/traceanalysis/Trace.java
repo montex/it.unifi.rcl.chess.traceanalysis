@@ -132,7 +132,7 @@ public class Trace {
 		Trace t = new Trace();
 		
 		// NOTE: in List.subList the second parameter is exclusive, index starts from 0
-		t.data = new ArrayList<Double>(data.subList(start, end-1));
+		t.data = new ArrayList<Double>(data.subList(start, end+1));
 		
 		return t;
 	}
@@ -166,6 +166,7 @@ public class Trace {
 			System.out.println(e);
 		} catch (ExitTrappedException e) {
 			ret = Double.NaN;
+			System.out.println(e);
 		} finally {
 			enableSystemExitCall();
 		}
@@ -193,37 +194,32 @@ public class Trace {
 	}
 	
 	public Distribution[] getPhases(double coverage, int window) {
-		int len = data.size();
+		int len = data.size()-(window-1);
 		Distribution d = null;
 		Distribution[] dArray = new Distribution[len];
-		
-		for(int i = 0; i + window < len; i++) {
+
+		for(int i = 0; i < len; i++) {
 			try {
-				d = getSubTrace(i+1, i+window).getDistribution(coverage);
+				d = getSubTrace(i, i+(window-1)).getDistribution(coverage);
 			}catch (Exception e) {
-				System.out.println(e);
+				System.out.println("getSubTrace: " + e.getMessage());
 			}
 			dArray[i] = d;
-			
-			System.out.println(i + " > " +Utils.distributionToString(d));
 		}
 		
 		return dArray;
 	}
 	
 	public double[] getDynamicBound(double coverage, int window) {
-		double bounds[] = new double[data.size()];
+		int len = data.size()-(window-1);
+		double bounds[] = new double[len];
 		
-		for(int i = window-1; i < data.size(); i++) {
+		for(int i = 0; i < len; i++) {
 			try{
-				bounds[i] = getSubTrace(i+1-window, i+1).getBound(coverage);
+				bounds[i] = getSubTrace(i, i+(window-1)).getBound(coverage);
 			}catch(Exception e) {
-				System.out.println("Error: " + e.getMessage());
+				System.out.println("getDynamicBound: " + e.getMessage());
 			}
-		}
-		
-		for(int i = 0; i < window-1; i++) {
-			bounds[i] = bounds[window-1];
 		}
 	
 		return bounds;		

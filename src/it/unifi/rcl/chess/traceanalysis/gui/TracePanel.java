@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 import it.unifi.rcl.chess.traceanalysis.Trace;
+import it.unifi.rcl.chess.traceanalysis.Utils;
 
 import javax.swing.AbstractAction;
 import javax.swing.BoxLayout;
@@ -24,15 +25,18 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.CellEditorListener;
 import javax.swing.event.ChangeEvent;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableModel;
 
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.data.xy.WindDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
 import monitoringService.MonitoringService;
+import monitoringService.distributions.Distribution;
 
 public class TracePanel extends JPanel {
 	
@@ -53,6 +57,17 @@ public class TracePanel extends JPanel {
 	JLabel lblTraceName;
 	JLabel lblStat;
 	JButton btnPlot, btnClearWSizeTable;
+	JScrollPane scrollTabPhases;
+	JTable tablePhases;
+	
+	JLabel lblPhasesWSize;
+	JTextField txtPhasesWSize;
+	JLabel lblPhasesCoverage;
+	JTextField txtPhasesCoverage;
+	
+	JLabel lblSectionBounds;
+	JLabel lblSectionPlot;
+	JLabel lblSectionPhases;
 	
 	public TracePanel() {
 		initialize();
@@ -150,9 +165,11 @@ public class TracePanel extends JPanel {
 		
 		lblStat = new JLabel();
 		pnlInfo.add(lblStat);
-		
-//		progressBar = new JProgressBar();
-//		this.add(progressBar);
+	
+		/* Bound evaluation */
+		lblSectionBounds = new JLabel(">> BOUND EVALUATION <<");
+		lblSectionBounds.setToolTipText("Compute bounds on specific sections of the trace");
+		pnlBound.add(lblSectionBounds);
 		
 		scrollTabBounds = new JScrollPane();
 		scrollTabBounds.setPreferredSize(new Dimension(400,100));
@@ -169,6 +186,11 @@ public class TracePanel extends JPanel {
 		btnClearBoundsTable = new JButton("Clear Table");
 		btnClearBoundsTable.addActionListener(new ButtonAction("Clear Table", KeyEvent.VK_C));
 		pnlBound.add(btnClearBoundsTable);
+
+		/* Plotting */
+		lblSectionPlot = new JLabel(">> PLOTTING <<");
+		lblSectionPlot.setToolTipText("Plot the trace and dynamic bounds");
+		pnlPlot.add(lblSectionPlot);
 		
 		scrollTabWSize = new JScrollPane();
 		scrollTabWSize.setPreferredSize(new Dimension(100,100));
@@ -204,13 +226,105 @@ public class TracePanel extends JPanel {
 		btnClearWSizeTable.addActionListener(new ButtonAction("Clear Table", KeyEvent.VK_C));
 		pnlPlot.add(btnClearWSizeTable);	
 		
+		/* Phases detection */
+		lblSectionPhases = new JLabel(">> PHASES DETECTION <<");
+		lblSectionPhases.setToolTipText("Detect phases in the trace having different probabilistic properties");
+		pnlPhases.add(lblSectionPhases);
+		
+		scrollTabPhases = new JScrollPane();
+		scrollTabPhases.setPreferredSize(new Dimension(250,200));
+		pnlPhases.add(scrollTabPhases);
+		
+		tablePhases = new JTable();
+		tablePhases.setModel(new DefaultTableModel(
+				new Object[][] {
+						{null,null,null,null}
+					},
+					new String[] {
+						"Start", "End", "Distribution*", "Bound*"
+					}
+				) {
+			
+					Class[] columnTypes = new Class[] {
+						Integer.class, Integer.class, String.class, String.class
+					};
+					public Class getColumnClass(int columnIndex) {
+						return columnTypes[columnIndex];
+					}
+					@Override
+					public boolean isCellEditable(int row, int column) {
+						return false;
+					}
+				});
+		scrollTabPhases.setViewportView(tablePhases);
+		
+		lblPhasesCoverage = new JLabel("Coverage: ");
+		pnlPhases.add(lblPhasesCoverage);
+		txtPhasesCoverage = new JTextField("0.99");
+		pnlPhases.add(txtPhasesCoverage);
+		
+		lblPhasesWSize = new JLabel("Window Size: ");
+		pnlPhases.add(lblPhasesWSize);
+		txtPhasesWSize = new JTextField("20");
+		pnlPhases.add(txtPhasesWSize);
+				
 		btnPhaseDetection = new JButton("Phases Detection");;
 		btnPhaseDetection.addActionListener(new ButtonAction("PhasesDetection", KeyEvent.VK_P));
 		pnlPhases.add(btnPhaseDetection);
 	}
 	
 	private void phaseDetection() {
-		trace.getPhases(0.99, 20);
+		final class Phase {
+			int start;
+			int end;
+			Distribution dist;
+			double bound;
+			
+			public Phase(int start, int end) {
+				this.start = start;
+				this.end = end;
+			}
+		}
+		
+		double coverage = Double.parseDouble(txtPhasesCoverage.getText());
+		int wsize = Integer.parseInt(txtPhasesWSize.getText());
+		
+		Distribution[] dists = trace.getPhases(coverage, wsize);
+		Distribution curDist = null;
+		Distribution lastDist = null;
+		int iPhaseBegin;
+		Phase p = null;
+		
+		DefaultTableModel model = (DefaultTableModel)tablePhases.getModel();
+		for(int r = 0; r < model.getRowCount(); r++) {
+			model.removeRow(r);
+		}
+
+		// ignore initial window
+		model.addRow(new Object[] { 1, (wsize-1), "{undefined}", "" });
+		
+		iPhaseBegin = 0;
+		lastDist = dists[0];
+		for(int i = 1; i < dists.length; i++) {
+			
+			curDist = dists[i];
+			if(curDist.getClass().getName() != lastDist.getClass().getName()) {
+				// distribution is different from the previous: phase change
+				p = new Phase(iPhaseBegin, i-1+(wsize-1));
+				iPhaseBegin = i;
+				p.dist = lastDist;		
+				p.bound = trace.getSubTrace(p.start, p.end).getBound(coverage);
+				
+				model.addRow(new Object[] { p.start + wsize, p.end, Utils.distributionToString(p.dist), p.bound});
+			}
+			lastDist = curDist;
+		}
+		
+		p = new Phase(iPhaseBegin, dists.length-1);
+		p.dist = lastDist;
+		p.bound = trace.getSubTrace(p.start, p.end).getBound(coverage);
+		
+		model.addRow(new Object[] { p.start + wsize, p.end + wsize, Utils.distributionToString(p.dist), p.bound});
 	}
 	
 	private void plotTrace() {
@@ -226,7 +340,10 @@ public class TracePanel extends JPanel {
 				wsize = (Integer)tableWindowSize.getValueAt(i, 0);
 				coverage = (Double)tableWindowSize.getValueAt(i, 1);
 			
-				dataset.addSeries(Plotter.arrayToSeries(trace.getDynamicBound(coverage, wsize), "c="+coverage+",w="+wsize));
+				dataset.addSeries(Plotter.arrayToSeries(trace.getDynamicBound(coverage, wsize), "c="+coverage+",w="+wsize, wsize-1));
+				dataset.addSeries(Plotter.valueToSeries(trace.getMax(), "Max", trace.getSampleSize()));
+				dataset.addSeries(Plotter.valueToSeries(trace.getMin(), "Min", trace.getSampleSize()));
+				dataset.addSeries(Plotter.valueToSeries(trace.getAverage(), "Average", trace.getSampleSize()));
 			}catch(NullPointerException e) {
 				;
 			}
@@ -243,7 +360,7 @@ public class TracePanel extends JPanel {
 		dataset,
 		// Dataset
 		PlotOrientation.VERTICAL, // Plot Orientation
-		false,
+		true,
 		// Show Legend
 		true,
 		// Use tooltips
