@@ -1,7 +1,10 @@
 package it.unifi.rcl.chess.traceanalysis.gui;
 
+import java.awt.BasicStroke;
+import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Stroke;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
@@ -28,10 +31,14 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableModel;
 
+import org.eclipse.swt.graphics.RGB;
+import org.jfree.chart.ChartColor;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.renderer.xy.XYItemRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.WindDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
@@ -342,8 +349,8 @@ public class TracePanel extends JPanel {
 		
 		dataset.addSeries(Plotter.traceToSeries(trace));
 		dataset.addSeries(Plotter.valueToSeries(trace.getMax(), "Max", trace.getSampleSize()));
-		dataset.addSeries(Plotter.valueToSeries(trace.getMin(), "Min", trace.getSampleSize()));
 		dataset.addSeries(Plotter.valueToSeries(trace.getAverage(), "Average", trace.getSampleSize()));
+		dataset.addSeries(Plotter.valueToSeries(trace.getMin(), "Min", trace.getSampleSize()));
 		
 		int rows = tableWindowSize.getRowCount();
 		double coverage;
@@ -378,6 +385,46 @@ public class TracePanel extends JPanel {
 		// Configure chart to generate URLs?
 		);
 		
+		chart.setBackgroundPaint(Color.WHITE);
+		chart.getXYPlot().setBackgroundPaint(ChartColor.VERY_LIGHT_YELLOW);
+		chart.getXYPlot().setBackgroundAlpha(0.05f);
+		chart.getXYPlot().setRangeGridlinePaint(Color.LIGHT_GRAY);
+		chart.getXYPlot().setDomainGridlinePaint(Color.LIGHT_GRAY);
+	
+		XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
+		renderer.setDrawSeriesLineAsPath(true);
+		chart.getXYPlot().setRenderer(renderer);
+
+		
+		renderer.setSeriesPaint(0, Color.BLACK);
+		renderer.setSeriesPaint(1, ChartColor.DARK_BLUE);
+		renderer.setSeriesPaint(2, ChartColor.DARK_GRAY);
+		renderer.setSeriesPaint(3, ChartColor.DARK_BLUE);
+		
+		int nSeries = chart.getXYPlot().getSeriesCount();
+		for(int i=0; i < nSeries; i++) {
+			renderer.setSeriesShapesVisible(i, false);
+		}
+		
+		Stroke plainStroke = new BasicStroke(
+				        1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f
+				    );
+		
+		renderer.setSeriesStroke(0, plainStroke);
+		renderer.setSeriesStroke(1, 
+				new BasicStroke(
+			        1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f, new float[] { 6.0f, 3.0f }, 0.0f
+			    ));
+		renderer.setSeriesStroke(2, 
+				new BasicStroke(
+			        1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f, new float[] { 3.0f, 0.5f, 3.0f }, 0.0f
+			    ));
+		renderer.setSeriesStroke(3, 
+				new BasicStroke(
+			        1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f, new float[] { 6.0f, 3.0f }, 0.0f
+			    ));
+		
+		
 		JPanel plotPanel = new ChartPanel(chart);
 		JFrame plotFrame = new JFrame();
 		plotFrame.add(plotPanel);
@@ -385,6 +432,8 @@ public class TracePanel extends JPanel {
 		plotFrame.pack();
 		plotFrame.setTitle(TracePanel.this.trace.getName());
 		plotFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+
 	}
 	
 	private class ButtonAction extends AbstractAction {
