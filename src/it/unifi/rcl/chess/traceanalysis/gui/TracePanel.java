@@ -292,45 +292,53 @@ public class TracePanel extends JPanel {
 		Distribution[] dists = trace.getPhases(coverage, wsize);
 		Distribution curDist = null;
 		Distribution lastDist = null;
-		int iPhaseBegin;
+		int iPhaseBegin, iPhaseEnd;
 		Phase p = null;
 		
 		DefaultTableModel model = (DefaultTableModel)tablePhases.getModel();
-		for(int r = 0; r < model.getRowCount(); r++) {
-			model.removeRow(r);
+		while(model.getRowCount() > 0) {
+			model.removeRow(0);
 		}
 
-		// ignore initial window
-		model.addRow(new Object[] { 1, (wsize-1), "{undefined}", "" });
+//		// ignore initial window
+//		model.addRow(new Object[] { 1, (wsize-1), "{undefined}", "" });
 		
 		iPhaseBegin = 0;
-		lastDist = dists[0];
+		iPhaseEnd = (wsize-1);
+		curDist = dists[0];
 		for(int i = 1; i < dists.length; i++) {
-			
+			lastDist = curDist;			
 			curDist = dists[i];
 			if(curDist.getClass().getName() != lastDist.getClass().getName()) {
 				// distribution is different from the previous: phase change
-				p = new Phase(iPhaseBegin, i-1+(wsize-1));
-				iPhaseBegin = i;
+				p = new Phase(iPhaseBegin, iPhaseEnd);
 				p.dist = lastDist;		
 				p.bound = trace.getSubTrace(p.start, p.end).getBound(coverage);
+
+				iPhaseBegin = i;
+				iPhaseEnd = i+(wsize-1);
 				
-				model.addRow(new Object[] { p.start + wsize, p.end, Utils.distributionToString(p.dist), p.bound});
+				model.addRow(new Object[] { p.start + 1, p.end + 1, Utils.distributionToString(p.dist), p.bound});
+			}else{
+				iPhaseEnd++;
 			}
-			lastDist = curDist;
 		}
 		
-		p = new Phase(iPhaseBegin, dists.length-1);
+		p = new Phase(iPhaseBegin, iPhaseEnd);
 		p.dist = lastDist;
 		p.bound = trace.getSubTrace(p.start, p.end).getBound(coverage);
 		
-		model.addRow(new Object[] { p.start + wsize, p.end + wsize, Utils.distributionToString(p.dist), p.bound});
+		model.addRow(new Object[] { p.start + 1, p.end + 1, Utils.distributionToString(p.dist), p.bound});
+		tablePhases.setModel(model);
 	}
 	
 	private void plotTrace() {
 		XYSeriesCollection dataset = new XYSeriesCollection();
 		
 		dataset.addSeries(Plotter.traceToSeries(trace));
+		dataset.addSeries(Plotter.valueToSeries(trace.getMax(), "Max", trace.getSampleSize()));
+		dataset.addSeries(Plotter.valueToSeries(trace.getMin(), "Min", trace.getSampleSize()));
+		dataset.addSeries(Plotter.valueToSeries(trace.getAverage(), "Average", trace.getSampleSize()));
 		
 		int rows = tableWindowSize.getRowCount();
 		double coverage;
@@ -341,14 +349,11 @@ public class TracePanel extends JPanel {
 				coverage = (Double)tableWindowSize.getValueAt(i, 1);
 			
 				dataset.addSeries(Plotter.arrayToSeries(trace.getDynamicBound(coverage, wsize), "c="+coverage+",w="+wsize, wsize-1));
-				dataset.addSeries(Plotter.valueToSeries(trace.getMax(), "Max", trace.getSampleSize()));
-				dataset.addSeries(Plotter.valueToSeries(trace.getMin(), "Min", trace.getSampleSize()));
-				dataset.addSeries(Plotter.valueToSeries(trace.getAverage(), "Average", trace.getSampleSize()));
 			}catch(NullPointerException e) {
 				;
 			}
 		}
-				
+		
 		// Generate the graph
 		JFreeChart chart = ChartFactory.createXYLineChart(
 		"XY Chart",

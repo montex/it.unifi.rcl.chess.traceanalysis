@@ -200,11 +200,10 @@ public class Trace {
 
 		for(int i = 0; i < len; i++) {
 			try {
-				d = getSubTrace(i, i+(window-1)).getDistribution(coverage);
+				dArray[i] = getSubTrace(i, i+(window-1)).getDistribution(coverage);
 			}catch (Exception e) {
 				System.out.println("getSubTrace: " + e.getMessage());
 			}
-			dArray[i] = d;
 		}
 		
 		return dArray;
