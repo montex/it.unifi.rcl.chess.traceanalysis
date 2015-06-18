@@ -9,6 +9,7 @@ import java.util.ArrayList;
 
 import it.unifi.rcl.chess.traceanalysis.Trace;
 import it.unifi.rcl.chess.traceanalysis.Utils;
+import it.unifi.rcl.chess.traceanalysis.distributions.CHDistribution;
 
 import javax.swing.AbstractAction;
 import javax.swing.BoxLayout;
@@ -226,13 +227,13 @@ public class TracePanel extends JPanel {
 		btnClearWSizeTable.addActionListener(new ButtonAction("Clear Table", KeyEvent.VK_C));
 		pnlPlot.add(btnClearWSizeTable);	
 		
-		/* Phases detection */
-		lblSectionPhases = new JLabel(">> PHASES DETECTION <<");
+		/* Phases analysis */
+		lblSectionPhases = new JLabel(">> PHASES ANALYSIS <<");
 		lblSectionPhases.setToolTipText("Detect phases in the trace having different probabilistic properties");
 		pnlPhases.add(lblSectionPhases);
 		
 		scrollTabPhases = new JScrollPane();
-		scrollTabPhases.setPreferredSize(new Dimension(250,200));
+		scrollTabPhases.setPreferredSize(new Dimension(600,200));
 		pnlPhases.add(scrollTabPhases);
 		
 		tablePhases = new JTable();
@@ -256,6 +257,10 @@ public class TracePanel extends JPanel {
 						return false;
 					}
 				});
+		tablePhases.getColumnModel().getColumn(0).setPreferredWidth(60);
+		tablePhases.getColumnModel().getColumn(1).setPreferredWidth(60);
+		tablePhases.getColumnModel().getColumn(2).setPreferredWidth(260);
+		tablePhases.getColumnModel().getColumn(3).setPreferredWidth(220);
 		scrollTabPhases.setViewportView(tablePhases);
 		
 		lblPhasesCoverage = new JLabel("Coverage: ");
@@ -268,8 +273,8 @@ public class TracePanel extends JPanel {
 		txtPhasesWSize = new JTextField("20");
 		pnlPhases.add(txtPhasesWSize);
 				
-		btnPhaseDetection = new JButton("Phases Detection");;
-		btnPhaseDetection.addActionListener(new ButtonAction("PhasesDetection", KeyEvent.VK_P));
+		btnPhaseDetection = new JButton("Phases Analysis");;
+		btnPhaseDetection.addActionListener(new ButtonAction("PhasesAnalysis", KeyEvent.VK_P));
 		pnlPhases.add(btnPhaseDetection);
 	}
 	
@@ -277,7 +282,7 @@ public class TracePanel extends JPanel {
 		final class Phase {
 			int start;
 			int end;
-			Distribution dist;
+			CHDistribution dist;
 			double bound;
 			
 			public Phase(int start, int end) {
@@ -289,9 +294,9 @@ public class TracePanel extends JPanel {
 		double coverage = Double.parseDouble(txtPhasesCoverage.getText());
 		int wsize = Integer.parseInt(txtPhasesWSize.getText());
 		
-		Distribution[] dists = trace.getPhases(coverage, wsize);
-		Distribution curDist = null;
-		Distribution lastDist = null;
+		CHDistribution[] dists = trace.getPhases(coverage, wsize);
+		CHDistribution curDist = null;
+		CHDistribution lastDist = null;
 		int iPhaseBegin, iPhaseEnd;
 		Phase p = null;
 		
@@ -309,7 +314,7 @@ public class TracePanel extends JPanel {
 		for(int i = 1; i < dists.length; i++) {
 			lastDist = curDist;			
 			curDist = dists[i];
-			if(curDist.getClass().getName() != lastDist.getClass().getName()) {
+			if(!curDist.equals(lastDist)) {
 				// distribution is different from the previous: phase change
 				p = new Phase(iPhaseBegin, iPhaseEnd);
 				p.dist = lastDist;		
@@ -318,7 +323,7 @@ public class TracePanel extends JPanel {
 				iPhaseBegin = i;
 				iPhaseEnd = i+(wsize-1);
 				
-				model.addRow(new Object[] { p.start + 1, p.end + 1, Utils.distributionToString(p.dist), p.bound});
+				model.addRow(new Object[] { p.start + 1, p.end + 1, p.dist.toString(), p.bound});
 			}else{
 				iPhaseEnd++;
 			}
@@ -328,7 +333,7 @@ public class TracePanel extends JPanel {
 		p.dist = lastDist;
 		p.bound = trace.getSubTrace(p.start, p.end).getBound(coverage);
 		
-		model.addRow(new Object[] { p.start + 1, p.end + 1, Utils.distributionToString(p.dist), p.bound});
+		model.addRow(new Object[] { p.start + 1, p.end + 1, p.dist.toString(), p.bound});
 		tablePhases.setModel(model);
 	}
 	

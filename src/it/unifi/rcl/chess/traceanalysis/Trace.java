@@ -1,5 +1,7 @@
 package it.unifi.rcl.chess.traceanalysis;
 
+import it.unifi.rcl.chess.traceanalysis.distributions.CHDistribution;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,7 +28,10 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import monitoringService.MonitoringService;
 import monitoringService.distributions.Distribution;
+import monitoringService.mechanisms.MechanismAD;
 import monitoringService.mechanisms.MechanismAD_KS;
+import monitoringService.mechanisms.MechanismKS;
+import monitoringService.mechanisms.PhaseDetectionMechanism;
 import monitoringService.util.MonitoringServiceException;
 
 public class Trace {
@@ -124,6 +129,10 @@ public class Trace {
 		return SKIPLINE_CHAR;
 	}
 	
+	public ArrayList<Double> getSamples() {
+		return data;
+	}
+	
 	public int getSampleSize() {
 		return data.size();
 	}
@@ -177,7 +186,7 @@ public class Trace {
 		Distribution d = null;
 		forbidSystemExitCall();
 		try {
-			MechanismAD_KS m = new MechanismAD_KS();
+			PhaseDetectionMechanism m = new MechanismKS();
 			d = m.getDistribution(data, coverage, data.size());
 		} catch (MonitoringServiceException e) {
 			System.out.println(e);
@@ -193,14 +202,13 @@ public class Trace {
 		return Utils.distributionToString(getDistribution(coverage));
 	}
 	
-	public Distribution[] getPhases(double coverage, int window) {
+	public CHDistribution[] getPhases(double coverage, int window) {
 		int len = data.size()-(window-1);
-		Distribution d = null;
-		Distribution[] dArray = new Distribution[len];
+		CHDistribution[] dArray = new CHDistribution[len];
 
 		for(int i = 0; i < len; i++) {
 			try {
-				dArray[i] = getSubTrace(i, i+(window-1)).getDistribution(coverage);
+				dArray[i] = CHDistribution.toCHDistribution(getSubTrace(i, i+(window-1)),coverage);
 			}catch (Exception e) {
 				System.out.println("getSubTrace: " + e.getMessage());
 			}
