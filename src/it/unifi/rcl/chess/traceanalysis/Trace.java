@@ -186,7 +186,7 @@ public class Trace {
 		Distribution d = null;
 		forbidSystemExitCall();
 		try {
-			PhaseDetectionMechanism m = new MechanismKS();
+			PhaseDetectionMechanism m = new MechanismAD_KS();
 			d = m.getDistribution(data, coverage, data.size());
 		} catch (MonitoringServiceException e) {
 			System.out.println(e);

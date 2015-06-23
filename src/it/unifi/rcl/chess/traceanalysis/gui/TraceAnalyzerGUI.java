@@ -9,6 +9,7 @@ import javax.swing.JFrame;
 import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.List;
+import java.awt.Toolkit;
 
 import javax.swing.AbstractAction;
 import javax.swing.JFileChooser;
@@ -100,7 +101,13 @@ public class TraceAnalyzerGUI implements Runnable {
 	 * Run the form
 	 */
 	public void run() {
+		Toolkit tk = Toolkit.getDefaultToolkit();  
+		int xSize = ((int) tk.getScreenSize().getWidth());  
+		int ySize = ((int) tk.getScreenSize().getHeight()); 
+		Dimension dim = new Dimension(Math.round(0.8f * xSize), Math.round(0.8f * ySize));
+
 		frmChessProbabilisticTrace.setMinimumSize(new Dimension(MIN_WIDTH, MIN_HEIGHT));
+		frmChessProbabilisticTrace.setPreferredSize(dim);
 		frmChessProbabilisticTrace.pack();
 		frmChessProbabilisticTrace.setVisible(true);
 		frmChessProbabilisticTrace.setLocationRelativeTo(null);
@@ -113,12 +120,28 @@ public class TraceAnalyzerGUI implements Runnable {
 		frmChessProbabilisticTrace = new JFrame();
 		frmChessProbabilisticTrace.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		frmChessProbabilisticTrace.setTitle("CHESS Probabilistic Trace Analyzer");
-				
+			
 		JMenuBar menuBar = new JMenuBar();
 		frmChessProbabilisticTrace.setJMenuBar(menuBar);
 		
 		JMenu mnfile = new JMenu("File");
 		menuBar.add(mnfile);
+		
+		JMenuItem mntmLoadTrace = new JMenuItem("Load New Trace");
+		mntmLoadTrace.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				TraceAnalyzerGUI.this.showLoadTraceDialog();;
+			}
+		});
+		mnfile.add(mntmLoadTrace);
+		
+		JMenuItem mntmClosePanel = new JMenuItem("Close Selected Panel");
+		mntmClosePanel.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				((TracePanel)TraceAnalyzerGUI.this.tabbedPane.getSelectedComponent()).dispose();
+			}
+		});
+		mnfile.add(mntmClosePanel);
 		
 		JMenuItem mntmQuit = new JMenuItem("Exit");
 		mntmQuit.addActionListener(new ActionListener() {
@@ -130,7 +153,7 @@ public class TraceAnalyzerGUI implements Runnable {
 		mntmQuit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_MASK));
 		mnfile.add(mntmQuit);
 		
-		mnLoadExamples = new JMenu("Load Examples");
+		mnLoadExamples = new JMenu("Examples");
 		menuBar.add(mnLoadExamples);
 		
 		JToolBar toolBar = new JToolBar();
@@ -168,9 +191,7 @@ public class TraceAnalyzerGUI implements Runnable {
         tabbedPane.addTab(shortTitle, tPanel);
         tabbedPane.setToolTipTextAt(tabbedPane.indexOfComponent(tPanel), tooltip);
         tabbedPane.setSelectedComponent(tPanel);
-                
-        frmChessProbabilisticTrace.pack();
-        
+                      
         return tPanel;
 	}
 	
@@ -205,8 +226,7 @@ public class TraceAnalyzerGUI implements Runnable {
 	}
 	
 	private void loadExampleTracesList() {
-
-		
+	
 		InputStream s = getClass().getClassLoader().getResourceAsStream(RES_EXAMPLESLIST_PATH);
 		BufferedReader in = new BufferedReader(new InputStreamReader(s));
 		
@@ -287,6 +307,23 @@ public class TraceAnalyzerGUI implements Runnable {
 		mnLoadExamples.add(mntmTemp);	
 	}
 	
+	private void showLoadTraceDialog() {
+		JFileChooser jfile = new JFileChooser(fLastPath);
+		jfile.setMultiSelectionEnabled(true);
+        int returnVal = jfile.showOpenDialog(TraceAnalyzerGUI.this.frmChessProbabilisticTrace);
+
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File[] files = jfile.getSelectedFiles();
+            TraceAnalyzerGUI.fLastPath = files[0];
+            
+            for(int i = 0; i < files.length; i++) {
+            	loadTrace(files[i]);
+            }
+        }else {
+
+        }		
+	}
+	
 	private class ButtonAction extends AbstractAction {
 		
 		public ButtonAction(String name, Integer mnemonic) {
@@ -300,20 +337,7 @@ public class TraceAnalyzerGUI implements Runnable {
 			Object src = e.getSource();
 			
 			if(src == btnLoadNewTrace) {
-				JFileChooser jfile = new JFileChooser(fLastPath);
-				jfile.setMultiSelectionEnabled(true);
-		        int returnVal = jfile.showOpenDialog(TraceAnalyzerGUI.this.frmChessProbabilisticTrace);
-
-		        if (returnVal == JFileChooser.APPROVE_OPTION) {
-		            File[] files = jfile.getSelectedFiles();
-		            TraceAnalyzerGUI.fLastPath = files[0];
-		            
-		            for(int i = 0; i < files.length; i++) {
-		            	loadTrace(files[i]);
-		            }
-		        }else {
-
-		        }
+				showLoadTraceDialog();
 			}
 		};
 	}

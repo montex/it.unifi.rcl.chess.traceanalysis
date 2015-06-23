@@ -56,7 +56,7 @@ public class CHDistribution {
 	}
 	
 	public String toString() {
-		return "{Unstable}";
+		return "{unknown}";
 	}
 	
 }
