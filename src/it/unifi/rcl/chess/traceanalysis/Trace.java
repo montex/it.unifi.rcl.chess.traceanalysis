@@ -236,6 +236,38 @@ public class Trace {
 		return data.get(index);
 	}
 	
+	public boolean hasNegativeValues() {
+		boolean hasNeg = false;
+		Iterator<Double> it = data.iterator();
+		while(it.hasNext() && !hasNeg) {
+			hasNeg = (hasNeg || it.next() < 0);
+		}
+		return hasNeg;
+	}
+	
+	public Trace[] splitPositiveNegative() {
+		Trace p = new Trace();
+		Trace n = new Trace();
+		
+		p.name = name + "+";
+		n.name = name + "-";
+		
+		Iterator<Double> it = data.iterator();
+		Double value = 0.0;
+		while(it.hasNext()) {
+			value = it.next();
+			if(value >= 0) {
+				p.data.add(value);
+				n.data.add(0.0);
+			}else{
+				p.data.add(0.0);
+				n.data.add(-value);
+			}
+		}
+		
+		return new Trace[] { p, n };
+	}
+	
 	/**
 	 * Checks if the input stream is compressed, and in case it returns a GZIPInputStream
 	 * @param stream

@@ -66,6 +66,13 @@ public class Plotter {
 		}
 		return s;
 	}
+
+	public static XYSeries arrayToSeriesInvert(double[] values, String name, int offset) {
+		for(int i = 0; i < values.length; i++) {
+			values[i] = -values[i];
+		}
+		return arrayToSeries(values, name, offset);
+	}
 	
 	public static XYSeries traceToSeries(Trace t) {
 		XYSeries s = new XYSeries(t.getName());

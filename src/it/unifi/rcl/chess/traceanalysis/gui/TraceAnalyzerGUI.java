@@ -83,10 +83,25 @@ public class TraceAnalyzerGUI implements Runnable {
 	
 	private JMenu mnLoadExamples;
 	
+	private static boolean bLoadExamples = false;
+	
 	/**
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
+		int i = 0;
+		while (i < args.length)
+		{
+			if (args[i].equals("-examples"))
+			{
+				i++;
+				bLoadExamples = true;
+				continue;
+			}
+			
+			i++;
+		}
+		
 		(new TraceAnalyzerGUI()).run();
 	}
 		
@@ -119,7 +134,7 @@ public class TraceAnalyzerGUI implements Runnable {
 	private void initialize() {
 		frmChessProbabilisticTrace = new JFrame();
 		frmChessProbabilisticTrace.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		frmChessProbabilisticTrace.setTitle("CHESS Probabilistic Trace Analyzer");
+		frmChessProbabilisticTrace.setTitle("CHESS Statistical Trace Analyzer");
 			
 		JMenuBar menuBar = new JMenuBar();
 		frmChessProbabilisticTrace.setJMenuBar(menuBar);
@@ -153,8 +168,10 @@ public class TraceAnalyzerGUI implements Runnable {
 		mntmQuit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_MASK));
 		mnfile.add(mntmQuit);
 		
-		mnLoadExamples = new JMenu("Examples");
-		menuBar.add(mnLoadExamples);
+		if(bLoadExamples) {
+			mnLoadExamples = new JMenu("Examples");
+			menuBar.add(mnLoadExamples);
+		}
 		
 		JToolBar toolBar = new JToolBar();
 		frmChessProbabilisticTrace.getContentPane().add(toolBar, BorderLayout.NORTH);
@@ -175,8 +192,9 @@ public class TraceAnalyzerGUI implements Runnable {
 //		JPanel pnlTrace2 = new TracePanel();
 //		tabbedPane.addTab("NewTrace1", pnlTrace1);
 //		tabbedPane.addTab("NewTrace2", pnlTrace2);
-		
-		loadExampleTracesList();
+		if(bLoadExamples) {
+			loadExampleTracesList();
+		}
 	}
 	
 	private TracePanel loadTrace(File f) {     

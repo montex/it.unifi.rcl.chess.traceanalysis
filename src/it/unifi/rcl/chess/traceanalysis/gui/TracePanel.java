@@ -9,8 +9,19 @@ import java.awt.Font;
 import java.awt.Stroke;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.lang.reflect.Array;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import it.unifi.rcl.chess.traceanalysis.Trace;
 import it.unifi.rcl.chess.traceanalysis.Utils;
@@ -72,7 +83,7 @@ public class TracePanel extends JPanel {
 	JDynamicTable tableWindowSize;
 	JLabel lblTraceName;
 	JLabel lblStat;
-	JButton btnPlot, btnClearWSizeTable;
+	JButton btnPlot, btnClearWSizeTable, btnBoundExport, btnCompareAll;
 	JScrollPane scrollTabPhases;
 	JTable tablePhases;
 	
@@ -160,10 +171,10 @@ public class TracePanel extends JPanel {
 //		pnlBound.setBorder(BorderFactory.createLineBorder(Color.black));
 //		pnlPlot.setBorder(BorderFactory.createLineBorder(Color.black));
 //		pnlPhases.setBorder(BorderFactory.createLineBorder(Color.black));
-		pnlInfo.setPreferredSize(new Dimension(300,220));
-		pnlBound.setPreferredSize(new Dimension(400,220));
-		pnlPlot.setPreferredSize(new Dimension(300,220));
-		pnlPhases.setPreferredSize(new Dimension(400,220));
+		pnlInfo.setPreferredSize(new Dimension(300,250));
+		pnlBound.setPreferredSize(new Dimension(400,250));
+		pnlPlot.setPreferredSize(new Dimension(300,250));
+		pnlPhases.setPreferredSize(new Dimension(400,250));
 		
 		pnlInfo.setBorder(new EmptyBorder(6, 6, 6, 6));
 		pnlBound.setBorder(new EmptyBorder(6, 6, 6, 6));
@@ -227,6 +238,7 @@ public class TracePanel extends JPanel {
 		pnlPlot.add(lblSectionPlot);
 			
 		scrollTabWSize = new JScrollPane();
+		scrollTabWSize.setPreferredSize(new Dimension(400,200));
 		pnlPlot.add(scrollTabWSize);
 		
 		tableWindowSize = new JDynamicTable();
@@ -252,10 +264,19 @@ public class TracePanel extends JPanel {
 		tableWindowSize.getColumnModel().getColumn(0).setPreferredWidth(10);
 		tableWindowSize.getColumnModel().getColumn(1).setPreferredWidth(10);
 		scrollTabWSize.setViewportView(tableWindowSize);
+		
 
 		btnPlot = new JButton("Plot");
 		btnPlot.addActionListener(new ButtonAction("Plot", KeyEvent.VK_P));
 		pnlPlot.add(btnPlot);
+		
+		btnBoundExport = new JButton("Export");
+		btnBoundExport.addActionListener(new ButtonAction("Export", KeyEvent.VK_E));
+		pnlPlot.add(btnBoundExport);
+		
+		btnCompareAll = new JButton("Compare All Traces");
+		btnCompareAll.addActionListener(new ButtonAction("Compare All Traces", KeyEvent.VK_A));
+		pnlPlot.add(btnCompareAll);
 		
 		btnClearWSizeTable = new JButton("Clear Table");
 		btnClearWSizeTable.addActionListener(new ButtonAction("Clear Table", KeyEvent.VK_C));
@@ -375,8 +396,46 @@ public class TracePanel extends JPanel {
 		tablePhases.setModel(model);
 	}
 	
+	private void exportBounds() {
+		int rows = tableWindowSize.getRowCount();
+		double coverage;
+		int wsize;
+		File fExport;
+		Writer wr;
+		double[] bounds;
+		for(int i = 0; i < rows; i++) {
+			try {
+				wsize = (Integer)tableWindowSize.getValueAt(i, 0);
+				coverage = (Double)tableWindowSize.getValueAt(i, 1);
+				bounds = trace.getDynamicBound(coverage, wsize);
+				
+				fExport = new File(trace.getName() + "_w" + wsize + "_c" + coverage);
+				wr = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fExport)));
+				wr.write("# window size: " + wsize + "\r\n" + "# coverage: " + coverage + "\r\n");
+				for(int j = 0; j < bounds.length; j++) {
+					wr.write(bounds[j] + "\r\n");
+				}
+				
+				wr.close();
+				
+			} catch (NullPointerException e) {
+				;
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}		
+	}
+	
 	private void plotTrace() {
 		XYSeriesCollection dataset = new XYSeriesCollection();
+		
+		XYSeries xyBoundsPositive = null	;
+		XYSeries xyBoundsNegative = null;
+		Trace[] posNeg = null;
 		
 		dataset.addSeries(Plotter.traceToSeries(trace));
 		dataset.addSeries(Plotter.valueToSeries(trace.getMax(), "Max", trace.getSampleSize()));
@@ -390,9 +449,18 @@ public class TracePanel extends JPanel {
 			try {
 				wsize = (Integer)tableWindowSize.getValueAt(i, 0);
 				coverage = (Double)tableWindowSize.getValueAt(i, 1);
-			
-				dataset.addSeries(Plotter.arrayToSeries(trace.getDynamicBound(coverage, wsize), "c="+coverage+",w="+wsize, wsize-1));
+				
+				if(trace.hasNegativeValues()) {
+					posNeg = trace.splitPositiveNegative();
+					xyBoundsPositive = Plotter.arrayToSeries(posNeg[0].getDynamicBound(coverage, wsize), "c="+coverage+",w="+wsize, wsize-1);
+					xyBoundsNegative = Plotter.arrayToSeriesInvert(posNeg[1].getDynamicBound(coverage, wsize), "c="+coverage+",w="+wsize+"(neg)", wsize-1);
+					dataset.addSeries(xyBoundsPositive);
+					dataset.addSeries(xyBoundsNegative);
+				}else{
+					dataset.addSeries(Plotter.arrayToSeries(trace.getDynamicBound(coverage, wsize), "c="+coverage+",w="+wsize, wsize-1));
+				}
 			}catch(NullPointerException e) {
+				//Ignore: cell value is null
 				;
 			}
 		}
@@ -432,11 +500,16 @@ public class TracePanel extends JPanel {
 		renderer.setSeriesPaint(0, Color.BLACK);
 		renderer.setSeriesPaint(1, ChartColor.DARK_BLUE);
 		renderer.setSeriesPaint(2, ChartColor.DARK_GRAY);
-		renderer.setSeriesPaint(3, ChartColor.DARK_BLUE);
+		renderer.setSeriesPaint(3, ChartColor.DARK_BLUE);	
+		renderer.setSeriesPaint(4, ChartColor.RED);	
 		
 		int nSeries = chart.getXYPlot().getSeriesCount();
 		for(int i=0; i < nSeries; i++) {
 			renderer.setSeriesShapesVisible(i, false);
+		}
+		if(posNeg != null) {
+			renderer.setSeriesVisibleInLegend(5,false);
+			renderer.setSeriesPaint(5, renderer.getSeriesPaint(4));
 		}
 		
 		Stroke plainStroke = new BasicStroke(
@@ -465,8 +538,118 @@ public class TracePanel extends JPanel {
 		plotFrame.pack();
 		plotFrame.setTitle(TracePanel.this.trace.getName());
 		plotFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	}
+	
+	private void plotCompare() {
+		XYSeriesCollection dataset = new XYSeriesCollection();
+		
+		XYSeries xyBoundsPositive = null	;
+		XYSeries xyBoundsNegative = null;
+		Trace[] posNeg = null;
+		
+		Component[] siblings = this.getParent().getComponents();
+		Trace[] allTraces = new Trace[siblings.length];
+		
+		int rows = tableWindowSize.getRowCount();
+		double coverage = 0.99;
+		int wsize = 100;
+		for(int i = 0; i < rows; i++) {
+			try {
+				wsize = (Integer)tableWindowSize.getValueAt(i, 0);
+				coverage = (Double)tableWindowSize.getValueAt(i, 1);
+			}catch(NullPointerException e) {
+				//Ignore: cell value is null
+				;
+			}
+		}
+		
+		for(int i = 0; i < siblings.length; i++) {
+			allTraces[i] = ((TracePanel)siblings[i]).getTrace();
+	
+			if(allTraces[i].hasNegativeValues()) {
+				posNeg = allTraces[i].splitPositiveNegative();
+				xyBoundsPositive = Plotter.arrayToSeries(posNeg[0].getDynamicBound(coverage, wsize), allTraces[i].getName(), wsize-1);
+				xyBoundsNegative = Plotter.arrayToSeriesInvert(posNeg[1].getDynamicBound(coverage, wsize), allTraces[i].getName()+"(neg)", wsize-1);
+				dataset.addSeries(xyBoundsPositive);
+				dataset.addSeries(xyBoundsNegative);
+			}else{
+				dataset.addSeries(Plotter.arrayToSeries(allTraces[i].getDynamicBound(coverage, wsize), allTraces[i].getName(), wsize-1));
+			}	
+		}
+		
 
-
+		
+		// Generate the graph
+		JFreeChart chart = ChartFactory.createXYLineChart(
+		"Comparative Plot (c="+coverage+",w="+wsize+")",
+		// Title
+		"Time Point",
+		// x-axis Labels
+		"Value",
+		// y-axis Label
+		dataset,
+		// Dataset
+		PlotOrientation.VERTICAL, // Plot Orientation
+		true,
+		// Show Legend
+		true,
+		// Use tooltips
+		false
+		// Configure chart to generate URLs?
+		);
+		
+		chart.setBackgroundPaint(Color.WHITE);
+		chart.getXYPlot().setBackgroundPaint(ChartColor.VERY_LIGHT_YELLOW);
+		chart.getXYPlot().setBackgroundAlpha(0.05f);
+		chart.getXYPlot().setRangeGridlinePaint(Color.LIGHT_GRAY);
+		chart.getXYPlot().setDomainGridlinePaint(Color.LIGHT_GRAY);
+	
+		chart.getTitle().setFont(new Font("Dialog", Font.BOLD, 14));
+		
+		XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer();
+		renderer.setDrawSeriesLineAsPath(true);
+		chart.getXYPlot().setRenderer(renderer);
+		
+		renderer.setSeriesPaint(0, Color.BLACK);
+		renderer.setSeriesPaint(1, ChartColor.DARK_GREEN);
+		renderer.setSeriesPaint(2, ChartColor.DARK_BLUE);
+		renderer.setSeriesPaint(3, ChartColor.RED);		
+		
+		int nSeries = chart.getXYPlot().getSeriesCount();
+		for(int i=0; i < nSeries; i++) {
+			renderer.setSeriesShapesVisible(i, false);
+		}
+		if(posNeg != null) {
+			renderer.setSeriesVisibleInLegend(5,false);
+			renderer.setSeriesPaint(5, renderer.getSeriesPaint(4));
+		}
+		
+//		Stroke plainStroke = new BasicStroke(
+//				        1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f
+//				    );
+//		
+//		renderer.setSeriesStroke(0, plainStroke);
+//		renderer.setSeriesStroke(1, 
+//				new BasicStroke(
+//			        1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f, new float[] { 6.0f, 3.0f }, 0.0f
+//			    ));
+//		renderer.setSeriesStroke(2, 
+//				new BasicStroke(
+//			        1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f, new float[] { 3.0f, 0.5f, 3.0f }, 0.0f
+//			    ));
+//		renderer.setSeriesStroke(3, 
+//				new BasicStroke(
+//			        1.0f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND, 1.0f, new float[] { 6.0f, 3.0f }, 0.0f
+//			    ));
+		
+		
+		JPanel plotPanel = new ChartPanel(chart);
+		JFrame plotFrame = new JFrame();
+		plotFrame.add(plotPanel);
+		plotFrame.setVisible(true);
+		plotFrame.pack();
+		plotFrame.setTitle(TracePanel.this.trace.getName());
+		plotFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 	}
 	
 	private class ButtonAction extends AbstractAction {
@@ -492,6 +675,10 @@ public class TracePanel extends JPanel {
 				tableBounds.reset();
 			}else if(src == btnPlot) {
 				plotTrace();
+			}else if(src == btnBoundExport) {
+				exportBounds();
+			}else if(src == btnCompareAll) {
+				plotCompare();
 			}else if(src == btnClearWSizeTable) {
 				tableWindowSize.clear();
 				tableWindowSize.setValueAt(100,0,0);
