@@ -1,7 +1,7 @@
 # CHESS Statistical Trace Analyzer
 ### it.unifi.rcl.chess.traceanalysis
 
-This sowftware is part of the **CHESS Framework**, and it has been developed within the **CONCERTO Project**.  
+This software is part of the **CHESS Framework**, and it has been developed within the **CONCERTO Project**.  
 More information about CHESS and CONCERTO can be found at the following websites:  
 
 * http://chess-project.org/  
